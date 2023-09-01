@@ -15,7 +15,7 @@ window.ready = (callback) => {
 }
 
 async function connect() {
-  client = await SignalWire({
+  client = await SignalWire.SignalWire({
     token: _token,
     rootElement: document.getElementById('rootElement'),
   })
