@@ -23,8 +23,12 @@ async function apiRequest(endpoint, payload = {}, method = 'POST') {
 
 app.get('/', async (req, res) => {
   var token = await apiRequest('/api/fabric/subscribers/tokens', { reference: 'myclient' })
-  console.log(token)
   res.render('index', { token });
+});
+
+app.get('/minimal', async (req, res) => {
+  var token = await apiRequest('/api/fabric/subscribers/tokens', { reference: 'myclient' })
+  res.render('minimal', { token });
 });
 
 app.listen(process.env.PORT || 3000, () => {
