@@ -217,8 +217,7 @@ function restoreUI() {
 async function getClient() {
   if (!client) {
     client = await SWire({
-      host: document.getElementById('host').value,
-      token: document.getElementById('token').value,
+      token: _token,
       rootElement: document.getElementById('rootElement'),
     })
   }
@@ -687,18 +686,5 @@ window.seekForwardPlayback = () => {
     })
 }
 
-/**
- * On document ready auto-fill the input values from the localStorage.
- */
 window.ready(async function () {
-  document.getElementById('host').value =
-    localStorage.getItem('fabric.ws.host') || ''
-  document.getElementById('token').value =
-    localStorage.getItem('fabric.ws.token') || ''
-  document.getElementById('destination').value =
-    localStorage.getItem('fabric.ws.destination') || ''
-  document.getElementById('audio').checked =
-    (localStorage.getItem('fabric.ws.audio') || '1') === '1'
-  document.getElementById('video').checked =
-    (localStorage.getItem('fabric.ws.video') || '1') === '1'
 })

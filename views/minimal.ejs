@@ -7,9 +7,17 @@
     <script type="text/javascript" src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
   </head>
   <body>
-    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
       <div class="container">
         <a class="navbar-brand" href="#">SignalWire CF Client Beta</a>
+        <ul class="navbar-nav">
+          <li class="nav-item active">
+            <a class="nav-link" href="/">Full</span></a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/minimal">Minimal</a>
+          </li>
+        </ul>
       </div>
     </nav>
 
@@ -30,6 +38,6 @@
       const _token = "<%= token %>";
     </script>
     <script type="text/javascript" src="https://unpkg.com/@signalwire/js@dev"></script>
-    <script type="text/javascript" src="/app.js"></script>
+    <script type="text/javascript" src="/minimal.js"></script>
   </body>
 </html>
