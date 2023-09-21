@@ -8,6 +8,16 @@ app.use(express.json());
 app.use(express.static('public'));
 
 const axios = require('axios');
+const FIREBASE_CONFIG = JSON.stringify({
+  apiKey: process.env.FIREBASE_API_KEY,
+  authDomain: process.env.FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.FIREBASE_PROJECT_ID,
+  storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.FIREBASE_APP_ID,
+  measurementId: process.env.FIREBASE_MEASUREMENT_ID,
+  vapidKey: process.env.FIREBASE_VAPID_KEY,
+})
 
 async function apiRequest(endpoint, payload = {}, method = 'POST') {
   var url = `https://${process.env.SIGNALWIRE_SPACE}${endpoint}`
@@ -27,8 +37,22 @@ app.get('/', async (req, res) => {
 });
 
 app.get('/minimal', async (req, res) => {
-  var token = await apiRequest('/api/fabric/subscribers/tokens', { reference: 'myclient' })
-  res.render('minimal', { token, destination: process.env.DEFAULT_DESTINATION });
+  var response = await apiRequest('/api/fabric/subscribers/tokens', { reference: 'myclient' })
+  res.render('minimal', {
+    token: response.token, 
+    destination: process.env.DEFAULT_DESTINATION,
+    firebaseConfig: FIREBASE_CONFIG,
+  });
+});
+
+app.get('/service-worker.js', async (req, res) => {
+  res.set({
+    'Content-Type': 'application/javascript; charset=UTF-8'
+  })
+
+  res.render('service-worker', {
+    firebaseConfig: FIREBASE_CONFIG,
+  });
 });
 
 app.listen(process.env.PORT || 3000, () => {
