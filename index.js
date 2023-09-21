@@ -32,8 +32,11 @@ async function apiRequest(endpoint, payload = {}, method = 'POST') {
 }
 
 app.get('/', async (req, res) => {
-  var token = await apiRequest('/api/fabric/subscribers/tokens', { reference: 'myclient' })
-  res.render('index', { token, destination: process.env.DEFAULT_DESTINATION });
+  var response = await apiRequest('/api/fabric/subscribers/tokens', { reference: 'myclient' })
+  res.render('index', { 
+    token: response.token,
+    destination: process.env.DEFAULT_DESTINATION,
+  });
 });
 
 app.get('/minimal', async (req, res) => {
