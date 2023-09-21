@@ -19,6 +19,8 @@ async function connect() {
     token: _token,
     rootElement: document.getElementById('rootElement'),
   })
+
+  await client.connect()
 }
 
 
