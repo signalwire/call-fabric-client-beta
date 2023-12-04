@@ -180,7 +180,6 @@ async function readPushNotification(payload) {
   // Chain invite and tag to have the full enc string
   const full = atob(payload.invite) + atob(payload.tag)
   const fullEncrypted = Uint8Array.from(full, (c) => c.charCodeAt(0))
-  // console.log('fullEncrypted', fullEncrypted)
 
   async function decrypt(keyData, iv, data) {
     const key = await window.crypto.subtle.importKey(
