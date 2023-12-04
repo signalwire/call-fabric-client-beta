@@ -1,13 +1,13 @@
 require('dotenv').config();
-let express = require('express');
-let app = express();
+const express = require('express');
+const app = express();
+const axios = require('axios');
+const ClientOAuth2 = require('client-oauth2')
 
 app.set('view engine', 'ejs');
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(express.static('public'));
-
-const axios = require('axios');
 
 const FIREBASE_CONFIG = JSON.stringify({
   apiKey: process.env.FIREBASE_API_KEY,
@@ -27,8 +27,6 @@ const token_request = {
 }
 
 const host = process.env.RELAY_HOST
-
-const ClientOAuth2 = require('client-oauth2')
 
 const oauthConfig = {
   clientId: process.env.OAUTH_CLIENT_ID,
@@ -73,18 +71,14 @@ app.get('/minimal', async (req, res) => {
 });
 
 app.get('/oauth', (req, res) => {
-
-
   const authorizationUri = oauthClient.code.getUri()
 
   res.redirect(authorizationUri)
 });
 
 app.get('/callback', async (req, res) => {
-
   const credentials = await oauthClient.code.getToken(req.originalUrl);
 
-  console.log(credentials.token)
   res.render('index', {
     host,
     token: credentials.accessToken,
