@@ -53,7 +53,7 @@ async function apiRequest(endpoint, payload = {}, method = 'POST') {
 }
 
 app.get('/', async (req, res) => {
-  var response = await apiRequest('/api/fabric/subscribers/tokens', token_request)
+  const response = await apiRequest('/api/fabric/subscribers/tokens', token_request)
   res.render('index', {
     host,
     token: response.token,
