@@ -63,7 +63,7 @@ app.get('/', async (req, res) => {
 });
 
 app.get('/minimal', async (req, res) => {
-  var response = await apiRequest('/api/fabric/subscribers/tokens', token_request)
+  const response = await apiRequest('/api/fabric/subscribers/tokens', token_request)
   res.render('minimal', {
     host,
     token: response.token,
