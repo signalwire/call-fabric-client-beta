@@ -173,7 +173,6 @@ async function readPushNotification(payload) {
   console.log('payload', payload)
 
   const key = b642ab(pnSecretKey)
-  // console.log('key', key)
   const iv = b642ab(payload.iv)
   // console.log('iv', iv)
 
