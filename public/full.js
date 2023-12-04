@@ -191,7 +191,6 @@ async function readPushNotification(payload) {
   }
 
   const compressed = await decrypt(key, iv, fullEncrypted)
-  // console.log('compressed', compressed)
 
   const result = window.pako.inflate(compressed, { to: 'string' }).toString()
   console.log('Dec:\n', JSON.stringify(JSON.parse(result), null, 2))
