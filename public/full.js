@@ -174,7 +174,6 @@ async function readPushNotification(payload) {
 
   const key = b642ab(pnSecretKey)
   const iv = b642ab(payload.iv)
-  // console.log('iv', iv)
 
   // Chain invite and tag to have the full enc string
   const full = atob(payload.invite) + atob(payload.tag)
@@ -192,7 +191,6 @@ async function readPushNotification(payload) {
   }
 
   const compressed = await decrypt(key, iv, fullEncrypted)
-  // console.log('compressed', compressed)
 
   const result = window.pako.inflate(compressed, { to: 'string' }).toString()
   console.log('Dec:\n', JSON.stringify(JSON.parse(result), null, 2))
