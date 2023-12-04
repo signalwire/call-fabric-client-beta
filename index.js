@@ -19,6 +19,14 @@ const FIREBASE_CONFIG = JSON.stringify({
   vapidKey: process.env.FIREBASE_VAPID_KEY,
 })
 
+const token_request = {
+  reference: process.env.SUBSCRIBER_REFERENCE,
+  password: process.env.SUBSCRIBER_PASSWORD,
+  application_id: process.env.CLIENT_ID
+}
+
+const host = process.env.RELAY_HOST
+
 async function apiRequest(endpoint, payload = {}, method = 'POST') {
   var url = `https://${process.env.SIGNALWIRE_SPACE}${endpoint}`
 
@@ -32,17 +40,21 @@ async function apiRequest(endpoint, payload = {}, method = 'POST') {
 }
 
 app.get('/', async (req, res) => {
-  var response = await apiRequest('/api/fabric/subscribers/tokens', { reference: 'myclient' })
-  res.render('index', { 
+  var response = await apiRequest('/api/fabric/subscribers/tokens', token_request)
+  res.render('index', {
+    host,
     token: response.token,
     destination: process.env.DEFAULT_DESTINATION,
+    firebaseConfig: FIREBASE_CONFIG,
   });
 });
 
 app.get('/minimal', async (req, res) => {
-  var response = await apiRequest('/api/fabric/subscribers/tokens', { reference: 'myclient' })
+  var response = await apiRequest('/api/fabric/subscribers/tokens', token_request)
+  console.log(response.token)
   res.render('minimal', {
-    token: response.token, 
+    host,
+    token: response.token,
     destination: process.env.DEFAULT_DESTINATION,
     firebaseConfig: FIREBASE_CONFIG,
   });
