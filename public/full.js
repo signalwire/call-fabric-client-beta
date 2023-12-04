@@ -174,7 +174,6 @@ async function readPushNotification(payload) {
 
   const key = b642ab(pnSecretKey)
   const iv = b642ab(payload.iv)
-  // console.log('iv', iv)
 
   // Chain invite and tag to have the full enc string
   const full = atob(payload.invite) + atob(payload.tag)
