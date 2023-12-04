@@ -8,6 +8,7 @@ app.use(express.json());
 app.use(express.static('public'));
 
 const axios = require('axios');
+
 const FIREBASE_CONFIG = JSON.stringify({
   apiKey: process.env.FIREBASE_API_KEY,
   authDomain: process.env.FIREBASE_AUTH_DOMAIN,
@@ -26,6 +27,18 @@ const token_request = {
 }
 
 const host = process.env.RELAY_HOST
+
+const ClientOAuth2 = require('client-oauth2')
+
+const oauthConfig = {
+  clientId: process.env.OAUTH_CLIENT_ID,
+  clientSecret: process.env.OAUTH_SECRET,
+  accessTokenUri: process.env.OAUTH_TOKEN_URI,
+  authorizationUri: process.env.OAUTH_AUTH_URI,
+  redirectUri: process.env.OAUTH_REDIRECT_URI
+}
+
+const oauthClient = new ClientOAuth2(oauthConfig)
 
 async function apiRequest(endpoint, payload = {}, method = 'POST') {
   var url = `https://${process.env.SIGNALWIRE_SPACE}${endpoint}`
@@ -59,6 +72,27 @@ app.get('/minimal', async (req, res) => {
     firebaseConfig: FIREBASE_CONFIG,
   });
 });
+
+app.get('/oauth', (req, res) => {
+
+
+  const authorizationUri = oauthClient.code.getUri()
+
+  res.redirect(authorizationUri)
+});
+
+app.get('/callback', async (req, res) => {
+
+  const credentials = await oauthClient.code.getToken(req.originalUrl);
+
+  console.log(credentials.token)
+  res.render('index', {
+    host,
+    token: credentials.accessToken,
+    destination: process.env.DEFAULT_DESTINATION,
+    firebaseConfig: FIREBASE_CONFIG,
+  });
+})
 
 app.get('/service-worker.js', async (req, res) => {
   res.set({
