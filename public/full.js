@@ -24,6 +24,7 @@ window.getSpeakerDevicesWithPermissions = getSpeakerDevicesWithPermissions
 let roomObj = null
 let client = null
 let micAnalyzer = null
+let pnSecretKey = null;
 
 const inCallElements = [
   roomControls,
@@ -72,6 +73,132 @@ window.playbackEnded = () => {
     button.classList.add('d-none')
     button.disabled = true
   })
+}
+
+async function enablePushNotifications() {
+  // Initialize Firebase App
+  console.log('Firebase config', _firebaseConfig)
+
+  const { vapidKey, ...config } = _firebaseConfig
+  const app = FB.initializeApp(config)
+  const messaging = FB.getMessaging(app)
+
+  FB.onMessage(messaging, (payload) => {
+    console.log('Push payload', payload)
+    const body = JSON.parse(payload.notification.body || '{}')
+    handlePushNotification(body)
+    alert(body.title)
+  })
+
+  try {
+    const registration = await navigator.serviceWorker.register(
+      '/service-worker.js',
+      {
+        updateViaCache: 'none',
+      }
+    )
+
+    console.log(
+      'Service Worker registration successful with registration: ',
+      registration,
+    )
+    const serviceWorker = registration.active ?? registration.waiting ?? registration.installing
+    if (serviceWorker.state !== 'activated') {
+      await new Promise((resolve) => {
+        serviceWorker.addEventListener('statechange', ({ target }) => {
+          if (target.state === 'activated') {
+            resolve()
+          }
+        })
+      })
+    }
+
+    const permission = await Notification.requestPermission()
+    if (permission === 'granted') {
+      const token = await FB.getToken(messaging, {
+        serviceWorkerRegistration: registration,
+        vapidKey,
+      })
+
+      console.log('Device token:', token)
+
+      /**
+       * Register this device as a valid target for PN from SignalWire
+       */
+      const { push_notification_key } = await client.registerDevice({
+        deviceType: 'Android', // Use Android w/ Firebase on the web
+        deviceToken: token,
+      })
+      pnSecretKey = push_notification_key
+      console.log('pnSecretKey: ', pnSecretKey)
+    }
+  } catch (error) {
+    console.error('Service Worker registration failed: ', error)
+  }
+}
+
+/**
+ * Read the PN payload and accept the inbound call
+ */
+async function handlePushNotification(pushNotificationPayload) {
+  try {
+    const result = await readPushNotification(pushNotificationPayload)
+    console.log('Push Notification:', result)
+    const { resultType, resultObject } = await client.handlePushNotification(
+      result
+    )
+
+    switch (resultType) {
+      case 'inboundCall':
+        window.__call = resultObject
+        window.__call.on('destroy', () => {
+          console.warn('Inbound Call got cancelled!!')
+        })
+        updateUIRinging()
+        break
+      default:
+        this.logger.warn('Unknown resultType', resultType, resultObject)
+        return
+    }
+  } catch (error) {
+    console.error('acceptCall', error)
+  }
+}
+
+function b642ab(base64_string) {
+  return Uint8Array.from(window.atob(base64_string), c => c.charCodeAt(0));
+}
+
+async function readPushNotification(payload) {
+  console.log('payload', payload)
+
+  const key = b642ab(pnSecretKey)
+  const iv = b642ab(payload.iv)
+
+  // Chain invite and tag to have the full enc string
+  const full = atob(payload.invite) + atob(payload.tag)
+  const fullEncrypted = Uint8Array.from(full, (c) => c.charCodeAt(0))
+
+  async function decrypt(keyData, iv, data) {
+    const key = await window.crypto.subtle.importKey(
+      'raw',
+      keyData,
+      { name: 'AES-GCM' },
+      false,
+      ['decrypt']
+    )
+    return window.crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, data)
+  }
+
+  const compressed = await decrypt(key, iv, fullEncrypted)
+
+  const result = window.pako.inflate(compressed, { to: 'string' }).toString()
+  console.log('Dec:\n', JSON.stringify(JSON.parse(result), null, 2))
+
+  return {
+    ...payload,
+    decrypted: JSON.parse(result),
+  }
 }
 
 async function loadLayouts(currentLayoutId) {
@@ -206,6 +333,8 @@ const initializeMicAnalyzer = async (stream) => {
 function restoreUI() {
   btnConnect.classList.remove('d-none')
   btnDisconnect.classList.add('d-none')
+  btnAnswer.classList.add('d-none')
+  btnReject.classList.add('d-none')
   connectStatus.innerHTML = 'Not Connected'
 
   inCallElements.forEach((button) => {
@@ -217,6 +346,7 @@ function restoreUI() {
 async function getClient() {
   if (!client) {
     client = await SWire({
+      host: _host,
       token: _token,
       rootElement: document.getElementById('rootElement'),
     })
@@ -254,14 +384,8 @@ window.connect = async () => {
   const joinHandler = (params) => {
     console.debug('>> room.joined', params)
 
-    btnConnect.classList.add('d-none')
-    btnDisconnect.classList.remove('d-none')
-    connectStatus.innerHTML = 'Connected'
+    updateUIConnected()
 
-    inCallElements.forEach((button) => {
-      button.classList.remove('d-none')
-      button.disabled = false
-    })
     // loadLayouts()
   }
   joinHandler()
@@ -346,6 +470,40 @@ window.connect = async () => {
   })
 }
 
+function updateUIRinging() {
+  btnConnect.classList.add('d-none')
+  btnAnswer.classList.remove('d-none')
+  btnReject.classList.remove('d-none')
+  connectStatus.innerHTML = 'Ringing'
+
+  inCallElements.forEach((button) => {
+    button.classList.remove('d-none')
+    button.disabled = false
+  })
+}
+
+function updateUIConnected() {
+  btnConnect.classList.add('d-none')
+  btnAnswer.classList.add('d-none')
+  btnReject.classList.add('d-none')
+  btnDisconnect.classList.remove('d-none')
+  connectStatus.innerHTML = 'Connected'
+
+  inCallElements.forEach((button) => {
+    button.classList.remove('d-none')
+    button.disabled = false
+  })
+}
+
+window.answer = async () => {
+  await window.__call.answer()
+  updateUIConnected()
+}
+
+window.reject = async () => {
+  await window.__call.hangup()
+  restoreUI()
+}
 /**
  * Hangup the roomObj if present
  */
@@ -687,4 +845,12 @@ window.seekForwardPlayback = () => {
 }
 
 window.ready(async function () {
+  console.log('Ready!')
+  const client = await getClient()
+  await client.connect()
+  const searchParams = new URLSearchParams(location.search);
+  console.log('Handle inbound?', searchParams.has('inbound'))
+  if (searchParams.has('inbound')) {
+    await enablePushNotifications()
+  }
 })

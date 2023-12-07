@@ -17,12 +17,14 @@ window.ready = (callback) => {
 
 async function connect() {
   client = await SignalWire.SignalWire({
+    host: _host,
     token: _token,
     rootElement: document.getElementById('rootElement'),
   })
 
   await client.connect()
 }
+
 
 
 async function makeCall() {
@@ -79,7 +81,7 @@ async function enablePushNotifications() {
         serviceWorkerRegistration: registration,
         vapidKey,
       })
-      
+
       /**
        * Register this device as a valid target for PN from SignalWire
        */
@@ -112,8 +114,7 @@ async function handlePushNotification(pushNotificationPayload) {
         window.__call.on('destroy', () => {
           console.warn('Inbound Call got cancelled!!')
         })
-        // enableCallButtons()
-        // connectStatus.innerHTML = 'Ringing...'
+        await window.__call.answer()
         break
       default:
         this.logger.warn('Unknown resultType', resultType, resultObject)
@@ -122,6 +123,10 @@ async function handlePushNotification(pushNotificationPayload) {
   } catch (error) {
     console.error('acceptCall', error)
   }
+}
+
+function b642ab(base64_string) {
+  return Uint8Array.from(window.atob(base64_string), c => c.charCodeAt(0));
 }
 
 async function readPushNotification(payload) {
