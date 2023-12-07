@@ -16,15 +16,21 @@ If you do not see the `Resources` tab in your space, please contact Support for 
 
 The first thing you need to do to use the SDK is requesting a token from SignalWire.
 
+To make this work, you need to set up a client application that can request a token to act on behalf of a subscriber.
+
 This is an example using CURL:
 
 ```
 curl --location 'https://YOURSPACE.signalwire.com/api/fabric/subscribers/tokens' \
 --form 'reference="foo"' \
+--form 'password="dont-tell"' \
+--form 'application_id="our-client-app-id"'
 --user 'YOURPROJECTKEY:YOURTOKEN'
 ```
 
-The `reference` field will be used in the future for inbound calling.
+The `reference` field (aka subscriber) will be used in the future for inbound calling.
+
+
 
 In the example application, we use `axios` to retrieve the token.
 
