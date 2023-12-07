@@ -38,6 +38,8 @@ async function makeCall() {
 }
 
 async function enablePushNotifications() {
+  btnRegister.disabled = true
+
   // Initialize Firebase App
   console.log('Firebase config', _firebaseConfig)
 
@@ -91,8 +93,10 @@ async function enablePushNotifications() {
       })
       pnSecretKey = push_notification_key
       console.log('pnSecretKey: ', pnSecretKey)
+      btnRegister.classList.add('d-none')
     }
   } catch (error) {
+    btnRegister.disabled = false
     console.error('Service Worker registration failed: ', error)
   }
 }
