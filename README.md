@@ -1,8 +1,8 @@
 # Call Fabric Client Beta
 
-This repository contains a limited release application using the new Call Fabric SDK from SignalWire.
+This repository is a WIP and contains a limited release application using the new Call Fabric SDK from SignalWire.
 
-It currently shows how to do outbound calling only.
+It currently shows how to do inbound and outbound calling unsing a server-side token or via client-side authentication using OAUTH.
 
 It contains two implementations, "full" and "minimal". We recommend starting from the minimal one and using the full application as a reference to add features as needed.
 
