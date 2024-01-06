@@ -37,7 +37,7 @@ jobs:
 
       - name: Start
         run: |
-          docker run --name=call-fabric-client ${{ env.TEST_TAG }}
+          docker run -d --name=call-fabric-client ${{ env.TEST_TAG }}
 
       - name: Logs
         run: |
