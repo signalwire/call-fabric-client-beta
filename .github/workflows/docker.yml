@@ -37,7 +37,7 @@ jobs:
 
       - name: Start
         run: |
-          docker run -d --rm --name=call-fabric-client-beta --env SECRET_KEY_BASE=dummy ${{ env.TEST_TAG }}
+          docker run -d --rm --name=call-fabric-client-beta ${{ env.TEST_TAG }}
 
       - name: Logs
         run: |
