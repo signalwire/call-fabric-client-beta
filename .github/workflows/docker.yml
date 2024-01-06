@@ -37,9 +37,9 @@ jobs:
 
       - name: Start
         run: |
-          docker run -d --rm --name=call-fabric-client-beta ${{ env.TEST_TAG }}
+          docker run --name=call-fabric-client ${{ env.TEST_TAG }}
 
       - name: Logs
         run: |
           docker ps
-          docker logs call-fabric-client-beta
+          docker logs call-fabric-client
