@@ -62,3 +62,7 @@ __pycache__
 .node-persist
 config.json
 .devcontainer
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
