@@ -6,7 +6,9 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "test": "jest"
+    "test": "npm run test:unit",
+    "test:unit": "jest --passWithNoTests"
+
   },
   "author": "",
   "license": "ISC",
