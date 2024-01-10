@@ -2,7 +2,6 @@ require('dotenv').config();
 const express = require('express');
 const session = require('express-session');
 const app = express();
-const axios = require('axios');
 const base64url = require('base64url');
 const crypto = require('crypto');
 
@@ -34,13 +33,21 @@ const host = process.env.RELAY_HOST
 async function apiRequest(endpoint, payload = {}, method = 'POST') {
   var url = `https://${process.env.SIGNALWIRE_SPACE}${endpoint}`
 
-  resp = await axios.post(url, payload, {
-    auth: {
-      username: process.env.SIGNALWIRE_PROJECT_KEY,
-      password: process.env.SIGNALWIRE_TOKEN
-    }
-  })
-  return resp.data
+  const response = await fetch(url, {
+    method: method,
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Basic ' + Buffer.from(process.env.SIGNALWIRE_PROJECT_KEY + ':' + process.env.SIGNALWIRE_TOKEN).toString('base64')
+    },
+    body: JSON.stringify(payload)
+  });
+
+  if (response.ok) {
+    return await response.json();
+  } else {
+    console.log(await response.text());
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
 }
 
 app.get('/', async (req, res) => {
