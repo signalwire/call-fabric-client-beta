@@ -105,12 +105,12 @@ const token_request = {
 const host = process.env.RELAY_HOST
 
 
-const authtentication = async (req, res, next) => {
+const authentication = async (req, res, next) => {
   const session = res.locals.session ?? (await authGetSession(req, authConfig))
 
   if (!session?.user) {
     callbackUrl = process.env.OAUTH_REDIRECT_URI ?? `${process.env.BASE_HOST_URL}/oauth`
-    res.redirect(`/api/auth/signing?callbackUrl=${callbackUrl`)
+    res.redirect(`/api/auth/signing?callbackUrl=${callbackUrl}`)
   } else {
     res.locals['session'] = session
     next()
@@ -150,7 +150,7 @@ app.get('/minimal', async (req, res) => {
   });
 });
 
-app.get('/oauth', authtentication, (req, res) => {
+app.get('/oauth', authentication, (req, res) => {
   const { session } = res.locals
 
   res.render('index', {
