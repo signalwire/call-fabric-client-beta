@@ -64,9 +64,11 @@ app.get('/minimal', async (req, res) => {
 });
 
 app.get('/oauth', (req, res) => {
+  console.log("begin oauth initiation");
   const authEndpoint = process.env.OAUTH_AUTH_URI;
   const verifier = base64url(crypto.pseudoRandomBytes(32));
   req.session.verifier = verifier;
+  console.log("verifier during initiation = ", verifier);
   const challenge = crypto.createHash("sha256").update(verifier).digest();
 
   const queryParams = new URLSearchParams({
@@ -85,10 +87,10 @@ app.get('/oauth', (req, res) => {
 
 app.get('/callback', async (req, res) => {
   const verifier = req.session.verifier;
+  console.log("verifier during callback = ", verifier);
   const code = req.query.code;
 
   response = await axios.post(process.env.OAUTH_TOKEN_URI, {
-    client_id: process.env.OAUTH_CLIENT_ID,
     grant_type: 'authorization_code',
     code: code,
     redirect_uri: process.env.OAUTH_REDIRECT_URI,
