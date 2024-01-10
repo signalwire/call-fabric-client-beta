@@ -85,11 +85,12 @@ app.get('/oauth', (req, res) => {
 
 app.get('/callback', async (req, res) => {
   const verifier = req.session.verifier;
+  const code = req.query.code;
 
   response = await axios.post(process.env.OAUTH_TOKEN_URI, {
     client_id: process.env.OAUTH_CLIENT_ID,
     grant_type: 'authorization_code',
-    code: req.params.code
+    code: code,
     redirect_uri: process.env.OAUTH_REDIRECT_URI,
     code_verifier: verifier
   });
