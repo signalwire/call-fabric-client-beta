@@ -1,5 +1,6 @@
 require('dotenv').config();
 const express = require('express');
+const session = require('express-session');
 const app = express();
 const axios = require('axios');
 const base64url = require('base64url');
@@ -9,6 +10,7 @@ app.set('view engine', 'ejs');
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(express.static('public'));
+app.use(session({ secret: '74cd5a0bea4542de9322fd95070e353d745bee2900e39576f98bc80a961209fa', resave: false, saveUninitialized: true }));
 
 const FIREBASE_CONFIG = JSON.stringify({
   apiKey: process.env.FIREBASE_API_KEY,
@@ -64,6 +66,7 @@ app.get('/minimal', async (req, res) => {
 app.get('/oauth', (req, res) => {
   const authEndpoint = process.env.OAUTH_AUTH_URI;
   const verifier = base64url(crypto.pseudoRandomBytes(32));
+  req.session.verifier = verifier;
   const challenge = crypto.createHash("sha256").update(verifier).digest();
 
   const queryParams = new URLSearchParams({
@@ -81,14 +84,22 @@ app.get('/oauth', (req, res) => {
 });
 
 app.get('/callback', async (req, res) => {
-  // const credentials = await oauthClient.code.getToken(req.originalUrl);
+  const verifier = req.session.verifier;
 
-  // res.render('index', {
-  //   host,
-  //   token: credentials.accessToken,
-  //   destination: process.env.DEFAULT_DESTINATION,
-  //   firebaseConfig: FIREBASE_CONFIG,
-  // });
+  response = await axios.post(process.env.OAUTH_TOKEN_URI, {
+    client_id: process.env.OAUTH_CLIENT_ID,
+    grant_type: 'authorization_code',
+    code: req.params.code
+    redirect_uri: process.env.OAUTH_REDIRECT_URI,
+    code_verifier: verifier
+  });
+
+  res.render('index', {
+    host,
+    token: response.access_token,
+    destination: process.env.DEFAULT_DESTINATION,
+    firebaseConfig: FIREBASE_CONFIG,
+  });
 })
 
 app.get('/service-worker.js', async (req, res) => {
