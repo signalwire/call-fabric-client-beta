@@ -2,7 +2,8 @@ require('dotenv').config();
 const express = require('express');
 const app = express();
 const axios = require('axios');
-const ClientOAuth2 = require('client-oauth2')
+const base64url = require('base64url');
+const crypto = require('crypto');
 
 app.set('view engine', 'ejs');
 app.use(express.urlencoded({ extended: true }));
@@ -28,16 +29,6 @@ const token_request = {
 
 const host = process.env.RELAY_HOST
 
-const oauthConfig = {
-  clientId: process.env.OAUTH_CLIENT_ID,
-  clientSecret: process.env.OAUTH_SECRET,
-  accessTokenUri: process.env.OAUTH_TOKEN_URI,
-  authorizationUri: process.env.OAUTH_AUTH_URI,
-  redirectUri: process.env.OAUTH_REDIRECT_URI
-}
-
-const oauthClient = new ClientOAuth2(oauthConfig)
-
 async function apiRequest(endpoint, payload = {}, method = 'POST') {
   var url = `https://${process.env.SIGNALWIRE_SPACE}${endpoint}`
 
@@ -51,40 +42,53 @@ async function apiRequest(endpoint, payload = {}, method = 'POST') {
 }
 
 app.get('/', async (req, res) => {
-  const response = await apiRequest('/api/fabric/subscribers/tokens', token_request)
+  // const response = await apiRequest('/api/fabric/subscribers/tokens', token_request)
   res.render('index', {
     host,
-    token: response.token,
+    token: '',
     destination: process.env.DEFAULT_DESTINATION,
     firebaseConfig: FIREBASE_CONFIG,
   });
 });
 
 app.get('/minimal', async (req, res) => {
-  const response = await apiRequest('/api/fabric/subscribers/tokens', token_request)
+  // const response = await apiRequest('/api/fabric/subscribers/tokens', token_request)
   res.render('minimal', {
     host,
-    token: response.token,
+    token: '',
     destination: process.env.DEFAULT_DESTINATION,
     firebaseConfig: FIREBASE_CONFIG,
   });
 });
 
 app.get('/oauth', (req, res) => {
-  const authorizationUri = oauthClient.code.getUri()
+  const authEndpoint = process.env.OAUTH_AUTH_URI;
+  const verifier = base64url(crypto.pseudoRandomBytes(32));
+  const challenge = crypto.createHash("sha256").update(verifier).digest();
+
+  const queryParams = new URLSearchParams({
+    response_type: 'code',
+    // scope: '',
+    client_id: process.env.OAUTH_CLIENT_ID,
+    redirect_uri: process.env.OAUTH_REDIRECT_URI,
+    code_challenge: challenge,
+    code_challenge_method: 'S256'
+  })
+
+  const authorizationUri = `${authEndpoint}?${queryParams}`
 
   res.redirect(authorizationUri)
 });
 
 app.get('/callback', async (req, res) => {
-  const credentials = await oauthClient.code.getToken(req.originalUrl);
+  // const credentials = await oauthClient.code.getToken(req.originalUrl);
 
-  res.render('index', {
-    host,
-    token: credentials.accessToken,
-    destination: process.env.DEFAULT_DESTINATION,
-    firebaseConfig: FIREBASE_CONFIG,
-  });
+  // res.render('index', {
+  //   host,
+  //   token: credentials.accessToken,
+  //   destination: process.env.DEFAULT_DESTINATION,
+  //   firebaseConfig: FIREBASE_CONFIG,
+  // });
 })
 
 app.get('/service-worker.js', async (req, res) => {
