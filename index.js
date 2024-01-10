@@ -10,7 +10,7 @@ app.set('view engine', 'ejs');
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(express.static('public'));
-app.use(session({ secret: '74cd5a0bea4542de9322fd95070e353d745bee2900e39576f98bc80a961209fa', resave: false, saveUninitialized: true }));
+app.use(session({ secret: process.env.SESSION_SECRET, resave: false, saveUninitialized: true }));
 
 const FIREBASE_CONFIG = JSON.stringify({
   apiKey: process.env.FIREBASE_API_KEY,
