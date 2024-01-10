@@ -1,46 +1,83 @@
 require('dotenv').config();
 const express = require('express');
 const app = express();
+const cors = require('cors');
 const axios = require('axios');
+const cookie_parser = require('cookie-parser')
 
 app.set('view engine', 'ejs');
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+app.use(cors('*'))
+app.use(cookie_parser());
 app.use(express.static('public'));
 
-app.set('trust proxy')
+app.set('trust proxy', 1);
 
-
-import('@auth/express').then(({ ExpressAuth }) => {
-  app.use('/api/auth/*', ExpressAuth({
-    providers: [
-      {
-        id: 'signalwire',
-        name: 'SignalWire',
-        type: 'oauth',
-        authorization: {
-          url: process.env.OAUTH_AUTH_URI,
-          params: { scope: 'email' }
-        },
-        clientId: process.env.OAUTH_CLIENT_ID,
-        clientSecret: process.env.OAUTH_SECRET,
-        token: process.env.OAUTH_TOKEN_URI,
-        userinfo: process.env.OAUTH_REDIRECT_URI,
-        profile(profile) {
-          console.log('$$$$$$', profile);
-          return {
-            id: profile.id,
-            email: profile.email,
-            first_name: profile.first_name,
-            last_name: profile.last_name,
-            display_name: profile.display_name,
-            job_title: profile.job_title,
-            push_notification_key: profile.push_notification_key
-          };
+const authConfig = {
+  providers: [
+    {
+      id: 'signalwire',
+      name: 'SignalWire',
+      type: 'oauth',
+      authorization: {
+        url: process.env.OAUTH_AUTH_URI,
+        params: { scope: 'email' }
+      },
+      clientId: process.env.OAUTH_CLIENT_ID,
+      clientSecret: process.env.OAUTH_SECRET,
+      token: process.env.OAUTH_TOKEN_URI,
+      userinfo: process.env.OAUTH_USERINFO_URI,
+      profile(profile) {
+        return {
+          id: profile.id,
+          email: profile.email,
+          first_name: profile.first_name,
+          last_name: profile.last_name,
+          display_name: profile.display_name,
+          job_title: profile.job_title,
+          push_notification_key: profile.push_notification_key
+        };
+      }
+    }
+  ],
+  callbacks: {
+    jwt: ({ token, account, profile }) => {
+      if (account) {
+        token.accessToken = account.access_token
+        token.id = profile.id
+        token.pushNotificationKey = profile.push_notification_key
+      }
+      return token
+    },
+    session({ session, token }) {
+      return {
+        ...session,
+        sat: token.accessToken,
+        pushNotificationKey: token.pushNotificationKey,
+        user: {
+          id: token.id,
+          ...session.user,
+          username: session.user.email
         }
       }
-    ]
-  }))
+    }
+  }
+}
+
+let authGetSession
+
+import('@auth/express').then(({ ExpressAuth, getSession }) => {
+  authGetSession = getSession
+  async function authSession(req, res, next) {
+    res.locals.session = await getSession(req, authConfig)
+    next()
+  }
+
+
+
+  app.use('/api/auth/*', ExpressAuth(authConfig))
+  app.use(authSession)
 
   app.listen(process.env.PORT || 3000, () => {
     console.log("Server running on port 3000");
@@ -68,13 +105,16 @@ const token_request = {
 const host = process.env.RELAY_HOST
 
 
+const authtentication = async (req, res, next) => {
+  const session = res.locals.session ?? (await authGetSession(req, authConfig))
 
-async function authtentication(req, res, next) {
-  console.log(JSON.stringify(req.params))
-  console.log(JSON.stringify(req.cookies))
-  console.log(JSON.stringify(req.body))
-  console.log(JSON.stringify(req.headers))
-  return res.redirect("/api/auth/signin")
+  if (!session?.user) {
+    callbackUrl = process.env.OAUTH_REDIRECT_URI ?? `${process.env.BASE_HOST_URL}/oauth`
+    res.redirect(`/api/auth/signing?callbackUrl=${callbackUrl`)
+  } else {
+    res.locals['session'] = session
+    next()
+  }
 }
 
 
@@ -90,7 +130,7 @@ async function apiRequest(endpoint, payload = {}, method = 'POST') {
   return resp.data
 }
 
-app.get('/', authtentication, async (req, res) => {
+app.get('/', async (req, res) => {
   const response = await apiRequest('/api/fabric/subscribers/tokens', token_request)
   res.render('index', {
     host,
@@ -111,7 +151,14 @@ app.get('/minimal', async (req, res) => {
 });
 
 app.get('/oauth', authtentication, (req, res) => {
-  res.send(200)
+  const { session } = res.locals
+
+  res.render('index', {
+    host,
+    token: session.sat,
+    destination: process.env.DEFAULT_DESTINATION,
+    firebaseConfig: FIREBASE_CONFIG,
+  });
 });
 
 // app.get('/callback', async (req, res) => {
