@@ -64,16 +64,16 @@ app.get('/minimal', async (req, res) => {
 });
 
 app.get('/oauth', (req, res) => {
-  console.log("begin oauth initiation");
+  console.log("oauth: begin initiation");
+  // console.log("Request Headers: ", req.headers);
+
   const authEndpoint = process.env.OAUTH_AUTH_URI;
   const verifier = base64url(crypto.pseudoRandomBytes(32));
   req.session.verifier = verifier;
-  console.log("verifier during initiation = ", verifier);
-  const challenge = crypto.createHash("sha256").update(verifier).digest();
+  const challenge = base64url(crypto.createHash('sha256').update(verifier).digest());
 
   const queryParams = new URLSearchParams({
     response_type: 'code',
-    // scope: '',
     client_id: process.env.OAUTH_CLIENT_ID,
     redirect_uri: process.env.OAUTH_REDIRECT_URI,
     code_challenge: challenge,
@@ -82,15 +82,18 @@ app.get('/oauth', (req, res) => {
 
   const authorizationUri = `${authEndpoint}?${queryParams}`
 
-  res.redirect(authorizationUri)
+  res.redirect(authorizationUri);
 });
 
 app.get('/callback', async (req, res) => {
+  console.log("oauth: process callback");
+  // console.log("Request Headers: ", req.headers);
+
   const verifier = req.session.verifier;
-  console.log("verifier during callback = ", verifier);
   const code = req.query.code;
 
   response = await axios.post(process.env.OAUTH_TOKEN_URI, {
+    client_id: process.env.OAUTH_CLIENT_ID,
     grant_type: 'authorization_code',
     code: code,
     redirect_uri: process.env.OAUTH_REDIRECT_URI,
