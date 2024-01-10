@@ -37,7 +37,7 @@ async function apiRequest(endpoint, payload = {}, method = 'POST') {
     method: method,
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': 'Basic ' + Buffer.from(process.env.SIGNALWIRE_PROJECT_KEY + ':' + process.env.SIGNALWIRE_TOKEN).toString('base64')
+      'Authorization': `Basic ${Buffer.from(`${process.env.SIGNALWIRE_PROJECT_KEY}:${process.env.SIGNALWIRE_TOKEN}`).toString('base64')}`
     },
     body: JSON.stringify(payload)
   });
