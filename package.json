@@ -8,11 +8,11 @@
     "dev": "nodemon index.js",
     "test": "npm run test:unit",
     "test:unit": "jest --passWithNoTests"
-
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@auth/express": "^0.1.2",
     "axios": "^1.5.0",
     "client-oauth2": "^4.3.3",
     "dotenv": "^16.3.1",
