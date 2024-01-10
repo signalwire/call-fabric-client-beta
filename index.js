@@ -42,20 +42,20 @@ async function apiRequest(endpoint, payload = {}, method = 'POST') {
 }
 
 app.get('/', async (req, res) => {
-  // const response = await apiRequest('/api/fabric/subscribers/tokens', token_request)
+  const response = await apiRequest('/api/fabric/subscribers/tokens', token_request)
   res.render('index', {
     host,
-    token: '',
+    token: response.token,
     destination: process.env.DEFAULT_DESTINATION,
     firebaseConfig: FIREBASE_CONFIG,
   });
 });
 
 app.get('/minimal', async (req, res) => {
-  // const response = await apiRequest('/api/fabric/subscribers/tokens', token_request)
+  const response = await apiRequest('/api/fabric/subscribers/tokens', token_request)
   res.render('minimal', {
     host,
-    token: '',
+    token: response.token,
     destination: process.env.DEFAULT_DESTINATION,
     firebaseConfig: FIREBASE_CONFIG,
   });
