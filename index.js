@@ -65,7 +65,6 @@ app.get('/minimal', async (req, res) => {
 
 app.get('/oauth', (req, res) => {
   console.log("oauth: begin initiation");
-  // console.log("Request Headers: ", req.headers);
 
   const authEndpoint = process.env.OAUTH_AUTH_URI;
   const verifier = base64url(crypto.pseudoRandomBytes(32));
