@@ -86,7 +86,6 @@ app.get('/oauth', (req, res) => {
 
 app.get('/callback', async (req, res) => {
   console.log("oauth: process callback");
-  // console.log("Request Headers: ", req.headers);
 
   const params = new URLSearchParams();
   params.append('client_id', process.env.OAUTH_CLIENT_ID);
