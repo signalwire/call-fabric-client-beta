@@ -69,7 +69,7 @@ const host = process.env.RELAY_HOST
 
 
 
-async function authtentication(req, res, next) {
+async function authentication(req, res, next) {
   console.log(JSON.stringify(req.params))
   console.log(JSON.stringify(req.cookies))
   console.log(JSON.stringify(req.body))
@@ -90,7 +90,7 @@ async function apiRequest(endpoint, payload = {}, method = 'POST') {
   return resp.data
 }
 
-app.get('/', authtentication, async (req, res) => {
+app.get('/', authentication, async (req, res) => {
   const response = await apiRequest('/api/fabric/subscribers/tokens', token_request)
   res.render('index', {
     host,
@@ -110,7 +110,7 @@ app.get('/minimal', async (req, res) => {
   });
 });
 
-app.get('/oauth', authtentication, (req, res) => {
+app.get('/oauth', authentication, (req, res) => {
   res.send(200)
 });
 
