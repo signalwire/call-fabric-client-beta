@@ -25,7 +25,7 @@ import('@auth/express').then(({ ExpressAuth }) => {
         clientId: process.env.OAUTH_CLIENT_ID,
         clientSecret: process.env.OAUTH_SECRET,
         token: process.env.OAUTH_TOKEN_URI,
-        userinfo: process.env.OAUTH_REDIRECT_URI,
+        userinfo: process.env.OAUTH_USERINFO_URI,
         profile(profile) {
           console.log('$$$$$$', profile);
           return {
