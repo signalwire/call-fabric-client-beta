@@ -89,24 +89,31 @@ app.get('/callback', async (req, res) => {
   console.log("oauth: process callback");
   // console.log("Request Headers: ", req.headers);
 
-  const verifier = req.session.verifier;
-  const code = req.query.code;
+  const params = new URLSearchParams();
+  params.append('client_id', process.env.OAUTH_CLIENT_ID);
+  params.append('grant_type', 'authorization_code');
+  params.append('code', req.query.code);
+  params.append('redirect_uri', process.env.OAUTH_REDIRECT_URI);
+  params.append('code_verifier', req.session.verifier);
 
-  response = await axios.post(process.env.OAUTH_TOKEN_URI, {
-    client_id: process.env.OAUTH_CLIENT_ID,
-    grant_type: 'authorization_code',
-    code: code,
-    redirect_uri: process.env.OAUTH_REDIRECT_URI,
-    code_verifier: verifier
+  const response = await fetch(process.env.OAUTH_TOKEN_URI, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: params
   });
 
-  res.render('index', {
-    host,
-    token: response.access_token,
-    destination: process.env.DEFAULT_DESTINATION,
-    firebaseConfig: FIREBASE_CONFIG,
-  });
-})
+  if (response.ok) {
+    const data = await response.json();
+    res.render('index', {
+      host,
+      token: data.access_token,
+      destination: process.env.DEFAULT_DESTINATION,
+      firebaseConfig: FIREBASE_CONFIG,
+    });
+  } else {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+});
 
 app.get('/service-worker.js', async (req, res) => {
   res.set({
