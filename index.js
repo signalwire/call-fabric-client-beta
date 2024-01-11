@@ -25,7 +25,7 @@ const FIREBASE_CONFIG = JSON.stringify({
 const token_request = {
   reference: process.env.SUBSCRIBER_REFERENCE,
   password: process.env.SUBSCRIBER_PASSWORD,
-  application_id: process.env.CLIENT_ID
+  application_id: process.env.OAUTH_APPLICATION_ID
 }
 
 const host = process.env.RELAY_HOST
