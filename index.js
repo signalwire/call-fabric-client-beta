@@ -9,7 +9,7 @@ app.set('view engine', 'ejs');
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(express.static('public'));
-app.use(session({ secret: process.env.SESSION_SECRET, resave: false, saveUninitialized: true }));
+app.use(session({ secret: process.env.SESSION_SECRET, resave: true, saveUninitialized: true }));
 
 const FIREBASE_CONFIG = JSON.stringify({
   apiKey: process.env.FIREBASE_API_KEY,
@@ -22,60 +22,97 @@ const FIREBASE_CONFIG = JSON.stringify({
   vapidKey: process.env.FIREBASE_VAPID_KEY,
 })
 
-const token_request = {
-  reference: process.env.SUBSCRIBER_REFERENCE,
-  password: process.env.SUBSCRIBER_PASSWORD,
-  application_id: process.env.OAUTH_APPLICATION_ID
-}
-
 const host = process.env.RELAY_HOST
 
-async function apiRequest(endpoint, payload = {}, method = 'POST') {
-  var url = `https://${process.env.SIGNALWIRE_SPACE}${endpoint}`
-  console.log("url =", url);
-  console.log("project =", process.env.SIGNALWIRE_PROJECT_KEY);
-  console.log("token =", process.env.SIGNALWIRE_TOKEN);
-  console.log("payload =", payload);
+async function fetchAndHandleResponse(uri, options) {
+  const response = await fetch(uri, options);
 
-  const response = await fetch(url, {
-    method: method,
+  if (!response.ok) {
+    console.log('error response:', await response.text());
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+
+  return await response.json();
+}
+
+async function getAccessToken(code, verifier) {
+  const params = new URLSearchParams();
+  params.append('client_id', process.env.OAUTH_CLIENT_ID);
+  params.append('grant_type', 'authorization_code');
+  params.append('code', code);
+  params.append('redirect_uri', process.env.OAUTH_REDIRECT_URI);
+  params.append('code_verifier', verifier);
+
+  return await fetchAndHandleResponse(process.env.OAUTH_TOKEN_URI, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: params
+  });
+}
+
+async function getUserInfo(accessToken) {
+  return await fetchAndHandleResponse(process.env.OAUTH_USERINFO_URI, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${accessToken}`
+    }
+  });
+}
+
+async function getSubscriberToken() {
+  const token_request = {
+    reference: process.env.SUBSCRIBER_REFERENCE,
+    password: process.env.SUBSCRIBER_PASSWORD,
+    application_id: process.env.OAUTH_APPLICATION_ID
+  }
+
+  return await fetchAndHandleResponse(`https://${process.env.SIGNALWIRE_SPACE}/api/fabric/subscribers/tokens`, {
+    method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Basic ${Buffer.from(`${process.env.SIGNALWIRE_PROJECT_KEY}:${process.env.SIGNALWIRE_TOKEN}`).toString('base64')}`
     },
-    body: JSON.stringify(payload)
+    body: JSON.stringify(token_request)
   });
-
-  if (response.ok) {
-    return await response.json();
-  } else {
-    console.log(await response.text());
-    throw new Error(`HTTP error! status: ${response.status}`);
-  }
 }
 
 app.get('/', async (req, res) => {
-  const response = await apiRequest('/api/fabric/subscribers/tokens', token_request)
+  let token;
+  if (req.session && req.session.token) {
+    token = session.token
+  }else {
+    const response = getSubscriberToken();
+    token = response.token;
+  }
+
   res.render('index', {
     host,
-    token: response.token,
+    token: token,
     destination: process.env.DEFAULT_DESTINATION,
     firebaseConfig: FIREBASE_CONFIG,
   });
 });
 
 app.get('/minimal', async (req, res) => {
-  const response = await apiRequest('/api/fabric/subscribers/tokens', token_request)
+  let token;
+  if (req.session && req.session.token) {
+    token = session.token
+  }else {
+    const response = getSubscriberToken();
+    token = response.token;
+  }
+
   res.render('minimal', {
     host,
-    token: response.token,
+    token: token,
     destination: process.env.DEFAULT_DESTINATION,
     firebaseConfig: FIREBASE_CONFIG,
   });
 });
 
 app.get('/oauth', (req, res) => {
-  console.log("oauth: begin initiation");
+  console.log('oauth: begin initiation');
 
   const authEndpoint = process.env.OAUTH_AUTH_URI;
   const verifier = base64url(crypto.pseudoRandomBytes(32));
@@ -96,31 +133,19 @@ app.get('/oauth', (req, res) => {
 });
 
 app.get('/callback', async (req, res) => {
-  console.log("oauth: process callback");
+  console.log('oauth: process callback');
 
-  const params = new URLSearchParams();
-  params.append('client_id', process.env.OAUTH_CLIENT_ID);
-  params.append('grant_type', 'authorization_code');
-  params.append('code', req.query.code);
-  params.append('redirect_uri', process.env.OAUTH_REDIRECT_URI);
-  params.append('code_verifier', req.session.verifier);
+  try {
+    const tokenData = await getAccessToken(req.query.code, req.session.verifier);
+    const token = tokenData.access_token;
+    req.session.token = token;
 
-  const response = await fetch(process.env.OAUTH_TOKEN_URI, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: params
-  });
+    const userInfo = await getUserInfo(token);  
+    req.session.user = userInfo;
 
-  if (response.ok) {
-    const data = await response.json();
-    res.render('index', {
-      host,
-      token: data.access_token,
-      destination: process.env.DEFAULT_DESTINATION,
-      firebaseConfig: FIREBASE_CONFIG,
-    });
-  } else {
-    throw new Error(`HTTP error! status: ${response.status}`);
+    res.redirect('/');
+  } catch (error) {
+    console.error(error);
   }
 });
 
