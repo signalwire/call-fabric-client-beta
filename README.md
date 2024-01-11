@@ -32,7 +32,7 @@ The `reference` field (aka subscriber) will be used in the future for inbound ca
 
 
 
-In the example application, we use `axios` to retrieve the token.
+In the example application, we use `fetch` to retrieve the token.
 
 ## Instantiate the client and call the destination
 
