@@ -61,7 +61,7 @@ async function getUserInfo(accessToken) {
 }
 
 async function getSubscriberToken() {
-  const token_request = {
+  const tokenRequest = {
     reference: process.env.SUBSCRIBER_REFERENCE,
     password: process.env.SUBSCRIBER_PASSWORD,
     application_id: process.env.OAUTH_APPLICATION_ID
@@ -73,7 +73,7 @@ async function getSubscriberToken() {
       'Content-Type': 'application/json',
       'Authorization': `Basic ${Buffer.from(`${process.env.SIGNALWIRE_PROJECT_KEY}:${process.env.SIGNALWIRE_TOKEN}`).toString('base64')}`
     },
-    body: JSON.stringify(token_request)
+    body: JSON.stringify(tokenRequest)
   });
 }
 
