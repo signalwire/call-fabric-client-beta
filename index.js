@@ -80,8 +80,8 @@ async function getSubscriberToken() {
 app.get('/', async (req, res) => {
   let token;
   if (req.session && req.session.token) {
-    token = session.token
-  }else {
+    token = req.session.token
+  } else {
     const response = getSubscriberToken();
     token = response.token;
   }
