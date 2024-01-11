@@ -24,7 +24,7 @@ const FIREBASE_CONFIG = JSON.stringify({
 
 const host = process.env.RELAY_HOST
 
-async function fetchAndHandleResponse(uri, options) {
+async function apiRequest(uri, options) {
   const response = await fetch(uri, options);
 
   if (!response.ok) {
@@ -43,7 +43,7 @@ async function getAccessToken(code, verifier) {
   params.append('redirect_uri', process.env.OAUTH_REDIRECT_URI);
   params.append('code_verifier', verifier);
 
-  return await fetchAndHandleResponse(process.env.OAUTH_TOKEN_URI, {
+  return await apiRequest(process.env.OAUTH_TOKEN_URI, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: params
@@ -51,7 +51,7 @@ async function getAccessToken(code, verifier) {
 }
 
 async function getUserInfo(accessToken) {
-  return await fetchAndHandleResponse(process.env.OAUTH_USERINFO_URI, {
+  return await apiRequest(process.env.OAUTH_USERINFO_URI, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
@@ -67,7 +67,7 @@ async function getSubscriberToken() {
     application_id: process.env.OAUTH_APPLICATION_ID
   }
 
-  return await fetchAndHandleResponse(`https://${process.env.SIGNALWIRE_SPACE}/api/fabric/subscribers/tokens`, {
+  return await apiRequest(`https://${process.env.SIGNALWIRE_SPACE}/api/fabric/subscribers/tokens`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
