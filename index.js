@@ -32,6 +32,10 @@ const host = process.env.RELAY_HOST
 
 async function apiRequest(endpoint, payload = {}, method = 'POST') {
   var url = `https://${process.env.SIGNALWIRE_SPACE}${endpoint}`
+  console.log("url =", url);
+  console.log("project =", process.env.SIGNALWIRE_PROJECT_KEY);
+  console.log("token =", process.env.SIGNALWIRE_TOKEN);
+  console.log("payload =", payload);
 
   const response = await fetch(url, {
     method: method,
