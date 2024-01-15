@@ -1,5 +1,5 @@
-let client = null;
-let pnSecretKey = null;
+let client = null
+let pnSecretKey = null
 
 window.ready = (callback) => {
   if (document.readyState != 'loading') {
@@ -24,8 +24,6 @@ async function connect() {
 
   await client.connect()
 }
-
-
 
 async function makeCall() {
   const call = await client.dial({
@@ -64,9 +62,10 @@ async function enablePushNotifications() {
 
     console.log(
       'Service Worker registration successful with registration: ',
-      registration,
+      registration
     )
-    const serviceWorker = registration.active ?? registration.waiting ?? registration.installing
+    const serviceWorker =
+      registration.active ?? registration.waiting ?? registration.installing
     if (serviceWorker.state !== 'activated') {
       await new Promise((resolve) => {
         serviceWorker.addEventListener('statechange', ({ target }) => {
@@ -130,7 +129,7 @@ async function handlePushNotification(pushNotificationPayload) {
 }
 
 function b642ab(base64_string) {
-  return Uint8Array.from(window.atob(base64_string), c => c.charCodeAt(0));
+  return Uint8Array.from(window.atob(base64_string), (c) => c.charCodeAt(0))
 }
 
 async function readPushNotification(payload) {
@@ -169,13 +168,12 @@ async function readPushNotification(payload) {
   }
 }
 
-
 window.ready(async function () {
-  await connect();
+  await connect()
 
-  const searchParams = new URLSearchParams(location.search);
+  const searchParams = new URLSearchParams(location.search)
   console.log('Handle inbound?', searchParams.has('inbound'))
   if (searchParams.has('inbound')) {
     await enablePushNotifications()
   }
-});
+})
