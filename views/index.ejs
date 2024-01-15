@@ -94,6 +94,7 @@
           </div>
         </div>
 
+        <!-- Room controls -->
         <div id="roomControls" class="card mt-4 d-none">
           <div class="card-body">
             <h5>Controls</h5>
@@ -164,15 +165,41 @@
             <canvas id="mic-meter" width="40" height="100"></canvas>
           </div>
         </div>
+        <!-- Room controls end -->
       </div>
 
       <div class="col-12 col-md-8 mt-4 mt-md-1">
+        <!-- Addresses -->
+        <div class="card" id="addressesCard">
+          <div class="card-body" id="addresses"></div>
+          <div class="d-flex justify-content-center pb-2 gap-2">
+            <button 
+              name="fetch-next-address" 
+              type="button" 
+              class="btn btn-light btn-sm" 
+              onclick="fetchPrevAddresses()">
+              Prev
+            </button>
+            <button 
+              name="fetch-prev-address" 
+              type="button" 
+              class="btn btn-light btn-sm" 
+              onclick="fetchNextAddresses()">
+              Next
+            </button>
+          </div>
+        </div>
+        <!-- Addresses end -->
+
+        <!-- Root element (for SDK video) -->
         <div class="row py-3">
           <div class="col-12">
             <div id="rootElement"></div>
           </div>
         </div>
+        <!-- Root element (for SDK video) end -->
 
+        <!-- Mic/Speaker volume controls -->
         <div id="controlSliders" class="row py-2 d-none">
           <div class="col-4">
             <label for="microphoneVolume" class="form-label">
@@ -194,7 +221,9 @@
               id="inputSensitivity" />
           </div>
         </div>
+        <!-- Mic/Speaker volume controls end -->
 
+        <!-- Device controls -->
         <div id="controlLayout" class="row py-2 d-none">
           <div class="col-4">
             <label for="cameraSelect" class="form-label">Camera</label>
@@ -209,7 +238,9 @@
             <select class="form-select" value="" id="speakerSelect" onchange="changeSpeaker(this)"></select>
           </div>
         </div>
+        <!-- Device controls end -->
 
+        <!-- Call record controls -->
         <div id="controlRecording" class="row py-2 d-none">
           <h6>Recording (<i id="recordingState">unknown</i>)</h6>
           <div class="col-12">
@@ -233,7 +264,9 @@
             </div>
           </div>
         </div>
+        <!-- Call record controls end -->
 
+        <!-- Call playback controls -->
         <div id="controlPlayback" class="row py-2 d-none">
           <h6>Playback URL</h6>
           <div class="form-group">
@@ -287,6 +320,7 @@
             </div>
           </div>
         </div>
+        <!-- Call playback controls end -->
       </div>
     </div>
     <hr />

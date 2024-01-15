@@ -93,7 +93,7 @@ app.get('/', async (req, res) => {
   if (req.session && req.session.token) {
     token = req.session.token
   } else {
-    const response = getSubscriberToken()
+    const response = await getSubscriberToken()
     token = response.token
   }
 
