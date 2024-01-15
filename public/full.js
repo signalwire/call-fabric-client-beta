@@ -11,7 +11,7 @@ const {
   supportsMediaOutput,
   createDeviceWatcher,
   createMicrophoneAnalyzer,
-} = SignalWire;
+} = SignalWire
 
 window.getMicrophoneDevices = getMicrophoneDevices
 window.getCameraDevices = getCameraDevices
@@ -24,7 +24,7 @@ window.getSpeakerDevicesWithPermissions = getSpeakerDevicesWithPermissions
 let roomObj = null
 let client = null
 let micAnalyzer = null
-let pnSecretKey = null;
+let pnSecretKey = null
 
 const inCallElements = [
   roomControls,
@@ -102,9 +102,10 @@ async function enablePushNotifications() {
 
     console.log(
       'Service Worker registration successful with registration: ',
-      registration,
+      registration
     )
-    const serviceWorker = registration.active ?? registration.waiting ?? registration.installing
+    const serviceWorker =
+      registration.active ?? registration.waiting ?? registration.installing
     if (serviceWorker.state !== 'activated') {
       await new Promise((resolve) => {
         serviceWorker.addEventListener('statechange', ({ target }) => {
@@ -170,7 +171,7 @@ async function handlePushNotification(pushNotificationPayload) {
 }
 
 function b642ab(base64_string) {
-  return Uint8Array.from(window.atob(base64_string), c => c.charCodeAt(0));
+  return Uint8Array.from(window.atob(base64_string), (c) => c.charCodeAt(0))
 }
 
 async function readPushNotification(payload) {
@@ -852,7 +853,7 @@ window.ready(async function () {
   console.log('Ready!')
   const client = await getClient()
   await client.connect()
-  const searchParams = new URLSearchParams(location.search);
+  const searchParams = new URLSearchParams(location.search)
   console.log('Handle inbound?', searchParams.has('inbound'))
   if (searchParams.has('inbound')) {
     await enablePushNotifications()
