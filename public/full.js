@@ -340,6 +340,7 @@ function restoreUI() {
   btnDisconnect.classList.add('d-none')
   btnAnswer.classList.add('d-none')
   btnReject.classList.add('d-none')
+  addressesCard.classList.remove('d-none')
   connectStatus.innerHTML = 'Not Connected'
 
   inCallElements.forEach((button) => {
@@ -491,6 +492,7 @@ function updateUIConnected() {
   btnConnect.classList.add('d-none')
   btnAnswer.classList.add('d-none')
   btnReject.classList.add('d-none')
+  addressesCard.classList.add('d-none')
   btnDisconnect.classList.remove('d-none')
   connectStatus.innerHTML = 'Connected'
 
@@ -858,4 +860,61 @@ window.ready(async function () {
   if (searchParams.has('inbound')) {
     await enablePushNotifications()
   }
+  await fetchAddresses()
 })
+
+function updateAddressUI() {
+  addressesCard.classList.remove('d-none')
+  const addressesDiv = document.getElementById('addresses')
+  addressesDiv.innerHTML = ''
+  const { addresses } = window.__addressData
+
+  const list = addresses.map((address) => {
+    return `<li class="list-group-item">
+        <b>${address.display_name}</b> / <span>${
+      address.name
+    } </span> <span class="badge bg-primary float-end">${address.type}</span>
+      <ul class="list-group list-group-flush">
+        ${Object.keys(address.channels)
+          .map((c) => {
+            return `<li class="list-group-item">${address.channels[c]}</li>`
+          })
+          .join('')}
+      </ul>
+      </li>`
+  })
+  addressesDiv.insertAdjacentHTML('beforeend', list.join(''))
+}
+
+async function fetchAddresses() {
+  if (!client) return
+  try {
+    const addressData = await client.getAddresses()
+    window.__addressData = addressData
+    updateAddressUI()
+  } catch (error) {
+    console.error('Unable to fetch addresses', error)
+  }
+}
+
+window.fetchNextAddresses = async () => {
+  const { nextPage } = window.__addressData
+  try {
+    const nextAddresses = await nextPage()
+    window.__addressData = nextAddresses
+    updateAddressUI()
+  } catch (error) {
+    console.error('Unable to fetch next addresses', error)
+  }
+}
+
+window.fetchPrevAddresses = async () => {
+  const { prevPage } = window.__addressData
+  try {
+    const prevAddresses = await prevPage()
+    window.__addressData = prevAddresses
+    updateAddressUI()
+  } catch (error) {
+    console.error('Unable to fetch prev addresses', error)
+  }
+}
