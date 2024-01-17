@@ -863,27 +863,54 @@ window.ready(async function () {
   await fetchAddresses()
 })
 
+const escapeHTML = (str) => {
+  const div = document.createElement('div')
+  div.textContent = str
+  return div.innerHTML
+}
+
 function updateAddressUI() {
   addressesCard.classList.remove('d-none')
   const addressesDiv = document.getElementById('addresses')
   addressesDiv.innerHTML = ''
   const { addresses } = window.__addressData
 
-  const list = addresses.map((address) => {
-    return `<li class="list-group-item">
-        <b>${address.display_name}</b> / <span>${
-      address.name
-    } </span> <span class="badge bg-primary float-end">${address.type}</span>
-      <ul class="list-group list-group-flush">
-        ${Object.keys(address.channels)
-          .map((c) => {
-            return `<li class="list-group-item">${address.channels[c]}</li>`
-          })
-          .join('')}
-      </ul>
-      </li>`
-  })
-  addressesDiv.insertAdjacentHTML('beforeend', list.join(''))
+  const createListItem = (address) => {
+    const displayName = escapeHTML(address.display_name)
+    const name = escapeHTML(address.name)
+    const type = escapeHTML(address.type)
+
+    const dialList = document.createElement('ul')
+    dialList.className = 'list-group list-group-flush'
+
+    const listItem = document.createElement('li')
+    listItem.className = 'list-group-item'
+    listItem.innerHTML = `<b>${displayName}</b> / <span>${name}</span> 
+                          <span class="badge bg-primary float-end">${type}</span>`
+
+    listItem.appendChild(dialList)
+
+    Object.entries(address.channels).forEach(([channelName, channelValue]) => {
+      const sanitizedValue = escapeHTML(channelValue)
+      const li = document.createElement('li')
+      li.className = 'list-group-item d-flex align-items-center gap-2'
+      li.innerHTML = `<span>${sanitizedValue}</span>`
+
+      const button = document.createElement('button')
+      button.className = 'btn btn-sm btn-success'
+      button.textContent = 'Dial'
+      button.addEventListener('click', () => dialAddress(channelValue))
+
+      li.appendChild(button)
+      dialList.appendChild(li)
+    })
+
+    return listItem
+  }
+
+  addresses
+    .map(createListItem)
+    .forEach((item) => addressesDiv.appendChild(item))
 }
 
 async function fetchAddresses() {
@@ -895,6 +922,11 @@ async function fetchAddresses() {
   } catch (error) {
     console.error('Unable to fetch addresses', error)
   }
+}
+
+window.dialAddress = async (address) => {
+  const destinationInput = document.getElementById('destination')
+  destinationInput.value = address
 }
 
 window.fetchNextAddresses = async () => {
