@@ -927,6 +927,7 @@ async function fetchAddresses() {
 window.dialAddress = async (address) => {
   const destinationInput = document.getElementById('destination')
   destinationInput.value = address
+  connect()
 }
 
 window.fetchNextAddresses = async () => {
