@@ -13,6 +13,9 @@ const {
   createMicrophoneAnalyzer,
 } = SignalWire
 
+const searchInput = document.getElementById('searchInput')
+const searchType = document.getElementById('searchType')
+
 window.getMicrophoneDevices = getMicrophoneDevices
 window.getCameraDevices = getCameraDevices
 window.getSpeakerDevices = getSpeakerDevices
@@ -916,7 +919,13 @@ function updateAddressUI() {
 async function fetchAddresses() {
   if (!client) return
   try {
-    const addressData = await client.getAddresses()
+    const searchText = searchInput.value
+    const selectedType = searchType.value
+
+    const addressData = await client.getAddresses({
+      type: selectedType === 'all' ? undefined : selectedType,
+      displayName: !searchText.length ? undefined : searchText,
+    })
     window.__addressData = addressData
     updateAddressUI()
   } catch (error) {
@@ -950,3 +959,12 @@ window.fetchPrevAddresses = async () => {
     console.error('Unable to fetch prev addresses', error)
   }
 }
+
+let debounceTimeout
+searchInput.addEventListener('input', () => {
+  clearTimeout(debounceTimeout)
+  // Search after 1 seconds when user stops typing
+  debounceTimeout = setTimeout(fetchAddresses, 1000)
+})
+
+searchType.addEventListener('change', fetchAddresses)
