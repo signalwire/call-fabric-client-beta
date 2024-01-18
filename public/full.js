@@ -885,25 +885,58 @@ function updateAddressUI() {
 
     const listItem = document.createElement('li')
     listItem.className = 'list-group-item'
-    listItem.innerHTML = `<b>${displayName}</b> / <span>${name}</span> 
-                          <span class="badge bg-primary float-end">${type}</span>`
+    //  container d-flex align-items-center gap-2
 
-    listItem.appendChild(dialList)
+    const container = document.createElement('div');
+    container.className = 'container p-0';
+    listItem.appendChild(container);
+
+    const row = document.createElement('div');
+    row.className = 'row';
+    container.appendChild(row);
+
+    const col1 = document.createElement('div');
+    col1.className = 'col-10';
+    row.appendChild(col1);
+
+    const badge = document.createElement('span');
+    badge.className = 'badge bg-primary me-2';
+    badge.textContent = type;
+    col1.appendChild(badge);
+
+    const b = document.createElement('b');
+    b.textContent = displayName;
+    col1.appendChild(b);
+
+    const col2 = document.createElement('div');
+    col2.className = 'col';
+    row.appendChild(col2);
 
     Object.entries(address.channels).forEach(([channelName, channelValue]) => {
-      const sanitizedValue = escapeHTML(channelValue)
-      const li = document.createElement('li')
-      li.className = 'list-group-item d-flex align-items-center gap-2'
-      li.innerHTML = `<span>${sanitizedValue}</span>`
-
       const button = document.createElement('button')
       button.className = 'btn btn-sm btn-success'
-      button.textContent = 'Dial'
+
+      // button.textContent = `Dial ${channelName}`
       button.addEventListener('click', () => dialAddress(channelValue))
 
-      li.appendChild(button)
-      dialList.appendChild(li)
+      const icon = document.createElement('i');
+      if (channelName === "messaging") {
+        icon.className = 'bi bi-chat';
+      } else if (channelName === "video") {
+        icon.className = 'bi bi-camera-video';
+      } else if (channelName === "audio") {
+        icon.className = 'bi bi-phone';
+      }
+      button.appendChild(icon);
+
+      col2.appendChild(button);
     })
+
+    const row2 = document.createElement('div')
+    const addressUrl = Object.values(address.channels)[0]
+    let strippedUrl = addressUrl.split('?')[0];
+    row2.textContent = strippedUrl
+    container.appendChild(row2)
 
     return listItem
   }
