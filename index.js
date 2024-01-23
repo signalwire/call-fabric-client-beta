@@ -66,10 +66,10 @@ async function getUserInfo(accessToken) {
   })
 }
 
-async function getSubscriberToken() {
+async function getSubscriberToken(reference, password) {
   const tokenRequest = {
-    reference: process.env.SUBSCRIBER_REFERENCE,
-    password: process.env.SUBSCRIBER_PASSWORD,
+    reference: reference,
+    password: password,
     application_id: process.env.OAUTH_APPLICATION_ID,
   }
 
@@ -92,9 +92,6 @@ app.get('/', async (req, res) => {
   let token
   if (req.session && req.session.token) {
     token = req.session.token
-  } else {
-    const response = await getSubscriberToken()
-    token = response.token
   }
 
   res.render('index', {
@@ -109,9 +106,6 @@ app.get('/minimal', async (req, res) => {
   let token
   if (req.session && req.session.token) {
     token = session.token
-  } else {
-    const response = getSubscriberToken()
-    token = response.token
   }
 
   res.render('minimal', {
@@ -159,6 +153,30 @@ app.get('/callback', async (req, res) => {
     res.redirect('/')
   } catch (error) {
     console.error(error)
+  }
+})
+
+app.get('/subscriber', (req, res) => {
+  res.render('subscriber')
+})
+
+app.post('/subscriber', async (req, res) => {
+  console.log('process subscriber')
+
+  const { reference, password } = req.body;
+  console.log("reference: ", reference, "password: ", password) 
+
+  try {
+    const tokenData = await getSubscriberToken(reference, password)
+    const userInfo = await getUserInfo(tokenData.token)
+
+    req.session.token = tokenData.token
+    req.session.user = userInfo
+
+    res.redirect('/')
+  } catch (error) {
+    console.error(error)
+    res.status(500).send('<h1>An error occurred</h1><p>' + error.message + '</p>')
   }
 })
 
