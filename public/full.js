@@ -375,7 +375,6 @@ window.connect = async () => {
   // Set a node_id for steering
   const steeringId = undefined
 
-
   const call = await client.dial({
     to: document.getElementById('destination').value,
     logLevel: 'debug',
