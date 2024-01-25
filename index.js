@@ -164,7 +164,6 @@ app.post('/subscriber', async (req, res) => {
   console.log('process subscriber')
 
   const { reference, password } = req.body;
-  console.log("reference: ", reference, "password: ", password) 
 
   try {
     const tokenData = await getSubscriberToken(reference, password)
