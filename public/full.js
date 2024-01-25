@@ -353,7 +353,7 @@ function restoreUI() {
 }
 
 async function getClient() {
-  if (!client) {
+  if (!client && _token) {
     client = await SWire({
       host: _host,
       token: _token,
@@ -368,6 +368,8 @@ async function getClient() {
  * Connect with Relay creating a client and attaching all the event handler.
  */
 window.connect = async () => {
+  if (!_token) return
+
   const client = await getClient()
   window.__client = client
 
@@ -857,7 +859,9 @@ window.seekForwardPlayback = () => {
 window.ready(async function () {
   console.log('Ready!')
   const client = await getClient()
-  await client.connect()
+  if (client) {
+    await client.connect()
+  }
   const searchParams = new URLSearchParams(location.search)
   console.log('Handle inbound?', searchParams.has('inbound'))
   if (searchParams.has('inbound')) {
