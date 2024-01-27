@@ -868,7 +868,6 @@ window.ready(async function () {
     await enablePushNotifications()
   }
   await fetchAddresses()
-
 })
 
 const escapeHTML = (str) => {
