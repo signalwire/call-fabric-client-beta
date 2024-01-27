@@ -887,16 +887,9 @@ function setupAddressModal() {
   addressModal.addEventListener('show.bs.modal', event => {
     const button = event.relatedTarget
 
-    // TODO: consider getting the address object from __addressData rather than attributes? Addresses currently have no id in API response, so we have to search a bit
-    updateAddressModal({
-      name: button.getAttribute('data-bs-name'),
-      display_name: button.getAttribute('data-bs-display-name'),
-      resouce_id: button.getAttribute('data-bs-resource-id'),
-      cover_url: isBlank(button.getAttribute('data-bs-cover-url')) ? null : button.getAttribute('data-bs-preview-url'),
-      preview_url: isBlank(button.getAttribute('data-bs-preview-url')) ? null : button.getAttribute('data-bs-preview-url'),
-      type: button.getAttribute('data-bs-address-type'),
-      channels: []
-    })
+    const addressName = button.getAttribute('data-bs-name')
+    const address = __addressData.addresses.find(address => address.name === addressName)
+    updateAddressModal(address)
   })
 
   addressModal.addEventListener('hidden.bs.modal', event => {
@@ -929,19 +922,24 @@ function updateAddressModal(address) {
   addressBadge.textContent = address.type
   addressAvatar.src = address.cover_url || address.preview_url || `https://i.pravatar.cc/125?u=${address.resource_id}`
 
-  // TODO: disable all the buttons first
+  // disable all channel buttons
+  for (let channelButton in channelButtons) {
+    channelButtons[channelButton].disabled = true
+  }
 
-  // TODO: wire up channel dial buttons
-  // Object.entries(address.channels).forEach(([channelName, channelValue]) => {
-  //   let clone = channelButtons[channelName].cloneNode(true);
-  //   clone.addEventListener('click', () => {
-  //     alert(channelName + ': ' + channelValue);
-  //     dialAddress(channelValue);
-  //     $(addressModal).modal('hide');
-  //   });      
-  //   button.parentNode.replaceChild(clone, button);
-  // })
-
+  // re-enable appropriate channel buttons
+  Object.entries(address.channels).forEach(([channelName, channelValue]) => {
+    let button = channelButtons[channelName]
+    let clone = button.cloneNode(true)
+    clone.disabled = false
+    button.parentNode.replaceChild(clone, button)
+    clone.addEventListener('click', () => {
+      console.log('channelName click =', channelName, channelValue)
+      dialAddress(channelValue)
+      const theModal = new bootstrap.Modal("#addressModal")
+      theModal.hide()
+    })
+  })
 }
 
 function updateAddressUI() {
@@ -985,11 +983,7 @@ function updateAddressUI() {
     addressNameLink.href = '#';
     addressNameLink.dataset.bsToggle = 'modal';
     addressNameLink.dataset.bsTarget = '#addressModal';
-    addressNameLink.dataset.bsDisplayName = displayName;
-    addressNameLink.dataset.bsResourceId = address.resource_id;
-    addressNameLink.dataset.bsAddressType = type;
-    addressNameLink.dataset.bsCoverUrl = address.cover_url;
-    addressNameLink.dataset.bsPreviewUrl = address.preview_url;
+    addressNameLink.dataset.bsName = address.name;
     col1.appendChild(addressNameLink);
 
     const col2 = document.createElement('div');
