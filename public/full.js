@@ -868,12 +868,41 @@ window.ready(async function () {
     await enablePushNotifications()
   }
   await fetchAddresses()
+
 })
 
 const escapeHTML = (str) => {
   const div = document.createElement('div')
   div.textContent = str
   return div.innerHTML
+}
+
+function setupAddressModal() {
+  const addressModal = document.getElementById('addressModal')
+  if (addressModal) {
+    addressModal.addEventListener('show.bs.modal', event => {
+      const button = event.relatedTarget
+
+      const addressDisplayName = addressModal.querySelector('.modal-body .address-display-name')
+      const addressAvatar = addressModal.querySelector('.modal-body .address-avatar')
+      const addressBadge = addressModal.querySelector('.modal-body .address-badge')
+
+      addressDisplayName.textContent = button.getAttribute('data-bs-display-name')
+      addressAvatar.src = `https://i.pravatar.cc/125?u=${button.getAttribute('data-bs-resource-id')}`
+      addressBadge.textContent = button.getAttribute('data-bs-address-type')
+    })
+
+    addressModal.addEventListener('hidden.bs.modal', event => {
+      // reset modal
+      const addressDisplayName = addressModal.querySelector('.modal-body .address-display-name')
+      const addressAvatar = addressModal.querySelector('.modal-body .address-avatar')
+      const addressBadge = addressModal.querySelector('.modal-body .address-badge')
+  
+      addressDisplayName.textContent = ""
+      addressAvatar.src = ""
+      addressBadge.textContent = ""
+    })
+  }    
 }
 
 function updateAddressUI() {
@@ -911,9 +940,16 @@ function updateAddressUI() {
     badge.textContent = type;
     col1.appendChild(badge);
 
-    const b = document.createElement('b');
-    b.textContent = displayName;
-    col1.appendChild(b);
+    const addressNameLink = document.createElement('a');
+    addressNameLink.textContent = displayName;
+    addressNameLink.className = '';
+    addressNameLink.href = '#';
+    addressNameLink.dataset.bsToggle = 'modal';
+    addressNameLink.dataset.bsTarget = '#addressModal';
+    addressNameLink.dataset.bsDisplayName = displayName;
+    addressNameLink.dataset.bsResourceId = address.resource_id;
+    addressNameLink.dataset.bsAddressType = type;
+    col1.appendChild(addressNameLink);
 
     const col2 = document.createElement('div');
     col2.className = 'col';
@@ -965,6 +1001,7 @@ async function fetchAddresses() {
     })
     window.__addressData = addressData
     updateAddressUI()
+    setupAddressModal()    
   } catch (error) {
     console.error('Unable to fetch addresses', error)
   }
