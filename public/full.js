@@ -876,40 +876,58 @@ const escapeHTML = (str) => {
   return div.innerHTML
 }
 
+function isBlank(str) {
+  return str === null || str === undefined || str === '' || str === 'null';
+}
+
 function setupAddressModal() {
   const addressModal = document.getElementById('addressModal')
-  if (addressModal) {
-    addressModal.addEventListener('show.bs.modal', event => {
-      const button = event.relatedTarget
+  if (!addressModal) return
 
-      updateAddressModal({
-        name: button.getAttribute('data-bs-name'),
-        display_name: button.getAttribute('data-bs-display-name'),
-        resouce_id: button.getAttribute('data-bs-resource-id'),
-        cover_url: button.getAttribute('data-bs-cover-url'),
-        preview_url: button.getAttribute('data-bs-preview-url'),
-        type: button.getAttribute('data-bs-address-type'),
-        channels: []
-      })
-    })
+  addressModal.addEventListener('show.bs.modal', event => {
+    const button = event.relatedTarget
 
-    addressModal.addEventListener('hidden.bs.modal', event => {
-      updateAddressModal({ name: '', display_name: '', resouce_id: null, cover_url: null, preview_url: null, type: null, channels: [] })
+    // TODO: consider getting the address object from __addressData? Addresses currently have no id in API response, so we have to search
+    updateAddressModal({
+      name: button.getAttribute('data-bs-name'),
+      display_name: button.getAttribute('data-bs-display-name'),
+      resouce_id: button.getAttribute('data-bs-resource-id'),
+      cover_url: isBlank(button.getAttribute('data-bs-cover-url')) ? null : button.getAttribute('data-bs-preview-url'),
+      preview_url: isBlank(button.getAttribute('data-bs-preview-url')) ? null : button.getAttribute('data-bs-preview-url'),
+      type: button.getAttribute('data-bs-address-type'),
+      channels: []
     })
-  }    
+  })
+
+  addressModal.addEventListener('hidden.bs.modal', event => {
+    updateAddressModal({
+      name: '',
+      display_name: '',
+      resouce_id: null,
+      cover_url: null,
+      preview_url: null,
+      type: null,
+      channels: []
+    })
+  })
 }
 
 function updateAddressModal(address) {
   const addressModal = document.getElementById('addressModal')
-  if (addressModal) {
-    const addressDisplayName = addressModal.querySelector('.modal-body .address-display-name')
-    const addressAvatar = addressModal.querySelector('.modal-body .address-avatar')
-    const addressBadge = addressModal.querySelector('.modal-body .address-badge')
+  if (!addressModal) return
 
-    addressDisplayName.textContent = address.display_name
-    addressBadge.textContent = address.type
-    addressAvatar.src = address.cover_url || `https://i.pravatar.cc/125?u=${address.resource_id}`
-  }
+  const addressDisplayName = addressModal.querySelector('.modal-body .address-display-name')
+  const addressAvatar = addressModal.querySelector('.modal-body .address-avatar')
+  const addressBadge = addressModal.querySelector('.modal-body .address-badge')
+
+  addressDisplayName.textContent = address.display_name
+  addressBadge.textContent = address.type
+  addressAvatar.src = address.cover_url || address.preview_url || `https://i.pravatar.cc/125?u=${address.resource_id}`
+  console.log('address.cover_url', address.cover_url)
+  console.log('address.preview_url', address.preview_url)
+  console.log('addressAvatar.src', addressAvatar.src)
+  
+  // TODO: wire up channel dial buttons
 }
 
 function updateAddressUI() {
@@ -956,6 +974,8 @@ function updateAddressUI() {
     addressNameLink.dataset.bsDisplayName = displayName;
     addressNameLink.dataset.bsResourceId = address.resource_id;
     addressNameLink.dataset.bsAddressType = type;
+    addressNameLink.dataset.bsCoverUrl = address.cover_url;
+    addressNameLink.dataset.bsPreviewUrl = address.preview_url;
     col1.appendChild(addressNameLink);
 
     const col2 = document.createElement('div');
