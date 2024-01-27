@@ -923,10 +923,7 @@ function updateAddressModal(address) {
   addressDisplayName.textContent = address.display_name
   addressBadge.textContent = address.type
   addressAvatar.src = address.cover_url || address.preview_url || `https://i.pravatar.cc/125?u=${address.resource_id}`
-  console.log('address.cover_url', address.cover_url)
-  console.log('address.preview_url', address.preview_url)
-  console.log('addressAvatar.src', addressAvatar.src)
-  
+
   // TODO: wire up channel dial buttons
 }
 
