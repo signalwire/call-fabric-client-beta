@@ -887,7 +887,7 @@ function setupAddressModal() {
   addressModal.addEventListener('show.bs.modal', event => {
     const button = event.relatedTarget
 
-    // TODO: consider getting the address object from __addressData? Addresses currently have no id in API response, so we have to search
+    // TODO: consider getting the address object from __addressData rather than attributes? Addresses currently have no id in API response, so we have to search a bit
     updateAddressModal({
       name: button.getAttribute('data-bs-name'),
       display_name: button.getAttribute('data-bs-display-name'),
@@ -919,12 +919,29 @@ function updateAddressModal(address) {
   const addressDisplayName = addressModal.querySelector('.modal-body .address-display-name')
   const addressAvatar = addressModal.querySelector('.modal-body .address-avatar')
   const addressBadge = addressModal.querySelector('.modal-body .address-badge')
+  const channelButtons = {
+    messaging: addressModal.querySelector('.modal-body .btn-address-dial-audio'),
+    video: addressModal.querySelector('.modal-body .btn-address-dial-video'),
+    audio: addressModal.querySelector('.modal-body .btn-address-dial-messaging')
+  };
 
   addressDisplayName.textContent = address.display_name
   addressBadge.textContent = address.type
   addressAvatar.src = address.cover_url || address.preview_url || `https://i.pravatar.cc/125?u=${address.resource_id}`
 
+  // TODO: disable all the buttons first
+
   // TODO: wire up channel dial buttons
+  // Object.entries(address.channels).forEach(([channelName, channelValue]) => {
+  //   let clone = channelButtons[channelName].cloneNode(true);
+  //   clone.addEventListener('click', () => {
+  //     alert(channelName + ': ' + channelValue);
+  //     dialAddress(channelValue);
+  //     $(addressModal).modal('hide');
+  //   });      
+  //   button.parentNode.replaceChild(clone, button);
+  // })
+
 }
 
 function updateAddressUI() {
