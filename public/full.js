@@ -892,7 +892,7 @@ function setupAddressModal() {
   })
 
   addressModal.addEventListener('hidden.bs.modal', event => {
-    updateAddressModal({name: '',display_name: '',resouce_id: null,cover_url: null,preview_url: null,type: null,channels: []})
+    updateAddressModal({name:'',display_name:'',resouce_id:null,cover_url:null,preview_url:null,type:null,channels: []})
   })
 }
 
