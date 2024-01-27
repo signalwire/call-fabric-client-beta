@@ -886,22 +886,13 @@ function setupAddressModal() {
 
   addressModal.addEventListener('show.bs.modal', event => {
     const button = event.relatedTarget
-
     const addressName = button.getAttribute('data-bs-name')
     const address = __addressData.addresses.find(address => address.name === addressName)
     updateAddressModal(address)
   })
 
   addressModal.addEventListener('hidden.bs.modal', event => {
-    updateAddressModal({
-      name: '',
-      display_name: '',
-      resouce_id: null,
-      cover_url: null,
-      preview_url: null,
-      type: null,
-      channels: []
-    })
+    updateAddressModal({name: '',display_name: '',resouce_id: null,cover_url: null,preview_url: null,type: null,channels: []})
   })
 }
 
