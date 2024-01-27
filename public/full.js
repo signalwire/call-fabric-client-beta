@@ -930,6 +930,9 @@ function updateAddressModal(address) {
       addressModalInstance.hide()
     })
   })
+
+  // TODO: load recent conversations associated with address
+  // const messages = await getConversationHistory()
 }
 
 function updateAddressUI() {
