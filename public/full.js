@@ -882,26 +882,34 @@ function setupAddressModal() {
     addressModal.addEventListener('show.bs.modal', event => {
       const button = event.relatedTarget
 
-      const addressDisplayName = addressModal.querySelector('.modal-body .address-display-name')
-      const addressAvatar = addressModal.querySelector('.modal-body .address-avatar')
-      const addressBadge = addressModal.querySelector('.modal-body .address-badge')
-
-      addressDisplayName.textContent = button.getAttribute('data-bs-display-name')
-      addressAvatar.src = `https://i.pravatar.cc/125?u=${button.getAttribute('data-bs-resource-id')}`
-      addressBadge.textContent = button.getAttribute('data-bs-address-type')
+      updateAddressModal({
+        name: button.getAttribute('data-bs-name'),
+        display_name: button.getAttribute('data-bs-display-name'),
+        resouce_id: button.getAttribute('data-bs-resource-id'),
+        cover_url: button.getAttribute('data-bs-cover-url'),
+        preview_url: button.getAttribute('data-bs-preview-url'),
+        type: button.getAttribute('data-bs-address-type'),
+        channels: []
+      })
     })
 
     addressModal.addEventListener('hidden.bs.modal', event => {
-      // reset modal
-      const addressDisplayName = addressModal.querySelector('.modal-body .address-display-name')
-      const addressAvatar = addressModal.querySelector('.modal-body .address-avatar')
-      const addressBadge = addressModal.querySelector('.modal-body .address-badge')
-  
-      addressDisplayName.textContent = ""
-      addressAvatar.src = ""
-      addressBadge.textContent = ""
+      updateAddressModal({ name: null, display_name: null, resouce_id: null, cover_url: null, preview_url: null, type: null, channels: [] })
     })
   }    
+}
+
+function updateAddressModal(address) {
+  const addressModal = document.getElementById('addressModal')
+  if (addressModal) {
+    const addressDisplayName = addressModal.querySelector('.modal-body .address-display-name')
+    const addressAvatar = addressModal.querySelector('.modal-body .address-avatar')
+    const addressBadge = addressModal.querySelector('.modal-body .address-badge')
+
+    addressDisplayName.textContent = address.display_name
+    addressBadge.textContent = address.type
+    addressAvatar.src = address.cover_url || `https://i.pravatar.cc/125?u=${address.resource_id}`
+  }
 }
 
 function updateAddressUI() {
