@@ -904,9 +904,9 @@ function updateAddressModal(address) {
   const addressAvatar = addressModal.querySelector('.modal-body .address-avatar')
   const addressBadge = addressModal.querySelector('.modal-body .address-badge')
   const channelButtons = {
-    messaging: addressModal.querySelector('.modal-body .btn-address-dial-audio'),
+    audio: addressModal.querySelector('.modal-body .btn-address-dial-audio'),
     video: addressModal.querySelector('.modal-body .btn-address-dial-video'),
-    audio: addressModal.querySelector('.modal-body .btn-address-dial-messaging')
+    messaging: addressModal.querySelector('.modal-body .btn-address-dial-messaging')
   };
 
   addressDisplayName.textContent = address.display_name
@@ -925,10 +925,9 @@ function updateAddressModal(address) {
     clone.disabled = false
     button.parentNode.replaceChild(clone, button)
     clone.addEventListener('click', () => {
-      console.log('channelName click =', channelName, channelValue)
       dialAddress(channelValue)
-      const theModal = new bootstrap.Modal("#addressModal")
-      theModal.hide()
+      const addressModalInstance = bootstrap.Modal.getInstance(addressModal)
+      addressModalInstance.hide()
     })
   })
 }
@@ -970,7 +969,6 @@ function updateAddressUI() {
 
     const addressNameLink = document.createElement('a');
     addressNameLink.textContent = displayName;
-    addressNameLink.className = '';
     addressNameLink.href = '#';
     addressNameLink.dataset.bsToggle = 'modal';
     addressNameLink.dataset.bsTarget = '#addressModal';
