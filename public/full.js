@@ -891,7 +891,7 @@ function setupAddressModal() {
     updateAddressModal(address)
 
     // TODO: load recent conversations associated with address
-    // messages = fetchConversationHistory(__subscriberId, address.id)
+    // messages = await fetchConversationHistory(__subscriberId, address.id)
     // renderConversationHistory(messages)
   })
 
