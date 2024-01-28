@@ -889,6 +889,10 @@ function setupAddressModal() {
     const addressName = button.getAttribute('data-bs-name')
     const address = __addressData.addresses.find(address => address.name === addressName)
     updateAddressModal(address)
+
+    // TODO: load recent conversations associated with address
+    // messages = fetchConversationHistory(__subscriberId, address.id)
+    // renderConversationHistory(messages)
   })
 
   addressModal.addEventListener('hidden.bs.modal', event => {
@@ -930,9 +934,6 @@ function updateAddressModal(address) {
       addressModalInstance.hide()
     })
   })
-
-  // TODO: load recent conversations associated with address
-  // const messages = await getConversationHistory()
 }
 
 function updateAddressUI() {
@@ -1032,6 +1033,28 @@ async function fetchAddresses() {
   } catch (error) {
     console.error('Unable to fetch addresses', error)
   }
+}
+
+// Just a placeholder until ready. We can prepare `client` methods as well
+async function fetchConversationHistory(subscriberId, addressId) {
+  const queryParams = new URLSearchParams({
+    subscriber_id: subscriberId,
+    address_id: addressId,
+    limit: 10,
+  })
+  
+  const response = await fetch(`${_fabricApiUrl}/conversations?${queryParams}`, {
+    headers: { 
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${_token}`
+    }
+  })
+
+  if (!response.ok) {
+    throw new Error('Unable to fetch conversation history')
+  }
+
+  return await response.json()
 }
 
 window.dialAddress = async (address) => {
