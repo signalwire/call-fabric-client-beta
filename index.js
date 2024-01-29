@@ -29,6 +29,7 @@ const FIREBASE_CONFIG = JSON.stringify({
 })
 
 const host = process.env.RELAY_HOST
+const fabricApiUrl = process.env.SIGNALWIRE_FABRIC_API_URL
 
 async function apiRequest(uri, options) {
   const response = await fetch(uri, options)
@@ -97,6 +98,7 @@ app.get('/', async (req, res) => {
   res.render('index', {
     host,
     token: token,
+    fabricApiUrl: fabricApiUrl,
     destination: process.env.DEFAULT_DESTINATION,
     firebaseConfig: FIREBASE_CONFIG,
   })
@@ -111,6 +113,7 @@ app.get('/minimal', async (req, res) => {
   res.render('minimal', {
     host,
     token: token,
+    fabricApiUrl: fabricApiUrl,
     destination: process.env.DEFAULT_DESTINATION,
     firebaseConfig: FIREBASE_CONFIG,
   })
