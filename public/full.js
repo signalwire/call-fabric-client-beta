@@ -376,8 +376,8 @@ window.connect = async () => {
   connectStatus.innerHTML = 'Connecting...'
 
   // Set a node_id for steering
-  const steeringId = () {
-    const formValue= document.getElementById('destination').value;
+  const steeringId = () => {
+    const formValue= document.getElementById('steeringId').value;
     return !!formValue && formValue.trim().length ? formValue.trim() : undefined;
   }
 
