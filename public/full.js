@@ -377,7 +377,9 @@ window.connect = async () => {
 
   // Set a node_id for steering
   const steeringId = () => {
-    const formValue= document.getElementById('destination').value;
+
+    const formValue= document.getElementById('steeringId').value;
+
     return !!formValue && formValue.trim().length ? formValue.trim() : undefined;
   }
 
