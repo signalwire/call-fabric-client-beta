@@ -11,8 +11,8 @@
   <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
 
   <!-- To style up the demo a little -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/css/bootstrap.min.css" rel="stylesheet"
-    integrity="sha384-wEmeIV1mKuiNpC+IOBjI7aAzPcEZeedi5yW5f2yOq55WWLwNGmvvx4Um1vskeMj0" crossorigin="anonymous" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
 </head>
@@ -179,7 +179,29 @@
       <div class="col-12 col-md-8 mt-4 mt-md-1">
         <!-- Addresses -->
         <div class="card" id="addressesCard">
+          <!-- Filters -->
+          <div class="input-group mt-1 px-2">
+            <input
+              type="text"
+              class="form-control"
+              placeholder="Search..."
+              aria-label="Search"
+              aria-describedby="searchButton"
+              id="searchInput"
+            />
+            <select class="form-select" id="searchType">
+              <option value="all" selected>All</option>
+              <option value="subscriber">Subscriber</option>
+              <option value="room">Room</option>
+              <option value="call">Call</option>
+              <option value="app">App</option>
+            </select>
+          </div>
+          <!-- Filters end -->
+
           <div class="card-body" id="addresses"></div>
+          
+          <!-- Pagination -->
           <div class="d-flex justify-content-center pb-2 gap-2">
             <button 
               name="fetch-next-address" 
@@ -196,6 +218,7 @@
               Next
             </button>
           </div>
+          <!-- Pagination end -->
         </div>
         <!-- Addresses end -->
 
@@ -333,6 +356,88 @@
     </div>
     <hr />
   </div>
+
+  <div class="modal fade" id="addressModal" tabindex="-1" aria-labelledby="addressModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-body">
+          <div class="container-fluid">
+
+            <div class="text-center address-info mt-3">
+              <div class="address-avatar-container">
+                <img src="https://i.pravatar.cc/125?u=mail@ashallendesign.co.uk" alt="Avatar" class="rounded-circle avatar address-avatar">
+              </div>
+              <div class="row mt-1">
+                <div class="col-auto">
+                  <span class="badge address-badge bg-primary me-2">
+                    type
+                  </span>
+                </div>
+                <div class="col-auto">
+                  <h2 class="address-display-name">
+                    First Last
+                  </h2>
+                </div>  
+              </div>
+              <div class="address-channels-buttons mt-3">
+                <button class="btn btn-secondary btn-address-dial-audio">
+                  <i class="bi bi-phone"></i>
+                  Call
+                </button>
+                <button class="btn btn-secondary btn-address-dial-video">
+                  <i class="bi bi-camera-video"></i>
+                  Video
+                </button>
+                <button class="btn btn-secondary btn-address-dial-messaging">
+                  <i class="bi bi-chat"></i>
+                  Chat
+                </button>
+              </div>
+            </div>
+
+            <div class="mt-4">
+              <h3 class="text-center">Recents</h3>
+              <div class="address-recent-messages">
+                  <div class="address-recent-message shadow-sm p-2 mb-1 bg-body rounded">
+                    <p class="card-text placeholder-glow">
+                      <span class="placeholder placeholder-lg col-6"></span>
+                      <span class="placeholder placeholder-lg col-12"></span>
+                    </p>
+                  </div>
+                  <div class="address-recent-message shadow-sm p-2 mb-1 bg-body rounded">
+                    <p class="card-text placeholder-glow">
+                      <span class="placeholder placeholder-lg col-6"></span>
+                      <span class="placeholder placeholder-lg col-12"></span>
+                    </p>
+                  </div>
+                  <div class="address-recent-message shadow-sm p-2 mb-1 bg-body rounded">
+                    <p class="card-text placeholder-glow">
+                      <span class="placeholder placeholder-lg col-6"></span>
+                      <span class="placeholder placeholder-lg col-12"></span>
+                    </p>
+                  </div>
+                  <div class="address-recent-message shadow-sm p-2 mb-1 bg-body rounded">
+                    <p class="card-text placeholder-glow">
+                      <span class="placeholder placeholder-lg col-6"></span>
+                      <span class="placeholder placeholder-lg col-12"></span>
+                    </p>
+                  </div>
+                  <div class="address-recent-message shadow-sm p-2 mb-1 bg-body rounded">
+                    <p class="card-text placeholder-glow">
+                      <span class="placeholder placeholder-lg col-6"></span>
+                      <span class="placeholder placeholder-lg col-12"></span>
+                    </p>
+                  </div>
+                </div>                
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script type="module">
     // Import Firebase libs
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js'
@@ -348,8 +453,10 @@
   <script type="text/javascript">
     const _token = "<%= token %>";
     const _host = "<%= host %>";
+    const _fabricApiUrl = "<%= fabricApiUrl %>";
     const _firebaseConfig = <%- firebaseConfig %>;
   </script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
   <script type="text/javascript" src="https://unpkg.com/@signalwire/js@dev"></script>
   <script src="/full.js"></script>
 </body>

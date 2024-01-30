@@ -13,6 +13,9 @@ const {
   createMicrophoneAnalyzer,
 } = SignalWire
 
+const searchInput = document.getElementById('searchInput')
+const searchType = document.getElementById('searchType')
+
 window.getMicrophoneDevices = getMicrophoneDevices
 window.getCameraDevices = getCameraDevices
 window.getSpeakerDevices = getSpeakerDevices
@@ -878,6 +881,66 @@ const escapeHTML = (str) => {
   return div.innerHTML
 }
 
+function isBlank(str) {
+  return str === null || str === undefined || str === '' || str === 'null';
+}
+
+function setupAddressModal() {
+  const addressModal = document.getElementById('addressModal')
+  if (!addressModal) return
+
+  addressModal.addEventListener('show.bs.modal', event => {
+    const button = event.relatedTarget
+    const addressName = button.getAttribute('data-bs-name')
+    const address = __addressData.addresses.find(address => address.name === addressName)
+    updateAddressModal(address)
+
+    // TODO: load recent conversations associated with address
+    // messages = await fetchConversationHistory(__subscriberId, address.id)
+    // renderConversationHistory(messages)
+  })
+
+  addressModal.addEventListener('hidden.bs.modal', event => {
+    updateAddressModal({name:'',display_name:'',resouce_id:null,cover_url:null,preview_url:null,type:null,channels: []})
+  })
+}
+
+function updateAddressModal(address) {
+  const addressModal = document.getElementById('addressModal')
+  if (!addressModal) return
+
+  const addressDisplayName = addressModal.querySelector('.modal-body .address-display-name')
+  const addressAvatar = addressModal.querySelector('.modal-body .address-avatar')
+  const addressBadge = addressModal.querySelector('.modal-body .address-badge')
+  const channelButtons = {
+    audio: addressModal.querySelector('.modal-body .btn-address-dial-audio'),
+    video: addressModal.querySelector('.modal-body .btn-address-dial-video'),
+    messaging: addressModal.querySelector('.modal-body .btn-address-dial-messaging')
+  };
+
+  addressDisplayName.textContent = address.display_name
+  addressBadge.textContent = address.type
+  addressAvatar.src = address.cover_url || address.preview_url || `https://i.pravatar.cc/125?u=${address.resource_id}`
+
+  // disable all channel buttons
+  for (let channelButton in channelButtons) {
+    channelButtons[channelButton].disabled = true
+  }
+
+  // re-enable appropriate channel buttons
+  Object.entries(address.channels).forEach(([channelName, channelValue]) => {
+    let button = channelButtons[channelName]
+    let clone = button.cloneNode(true)
+    clone.disabled = false
+    button.parentNode.replaceChild(clone, button)
+    clone.addEventListener('click', () => {
+      dialAddress(channelValue)
+      const addressModalInstance = bootstrap.Modal.getInstance(addressModal)
+      addressModalInstance.hide()
+    })
+  })
+}
+
 function updateAddressUI() {
   addressesCard.classList.remove('d-none')
   const addressesDiv = document.getElementById('addresses')
@@ -913,9 +976,13 @@ function updateAddressUI() {
     badge.textContent = type;
     col1.appendChild(badge);
 
-    const b = document.createElement('b');
-    b.textContent = displayName;
-    col1.appendChild(b);
+    const addressNameLink = document.createElement('a');
+    addressNameLink.textContent = displayName;
+    addressNameLink.href = '#';
+    addressNameLink.dataset.bsToggle = 'modal';
+    addressNameLink.dataset.bsTarget = '#addressModal';
+    addressNameLink.dataset.bsName = address.name;
+    col1.appendChild(addressNameLink);
 
     const col2 = document.createElement('div');
     col2.className = 'col';
@@ -958,12 +1025,41 @@ function updateAddressUI() {
 async function fetchAddresses() {
   if (!client) return
   try {
-    const addressData = await client.getAddresses()
+    const searchText = searchInput.value
+    const selectedType = searchType.value
+
+    const addressData = await client.getAddresses({
+      type: selectedType === 'all' ? undefined : selectedType,
+      displayName: !searchText.length ? undefined : searchText,
+    })
     window.__addressData = addressData
     updateAddressUI()
+    setupAddressModal()    
   } catch (error) {
     console.error('Unable to fetch addresses', error)
   }
+}
+
+// Just a placeholder until ready. We can prepare `client` methods as well
+async function fetchConversationHistory(subscriberId, addressId) {
+  const queryParams = new URLSearchParams({
+    subscriber_id: subscriberId,
+    address_id: addressId,
+    limit: 10,
+  })
+  
+  const response = await fetch(`${_fabricApiUrl}/conversations?${queryParams}`, {
+    headers: { 
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${_token}`
+    }
+  })
+
+  if (!response.ok) {
+    throw new Error('Unable to fetch conversation history')
+  }
+
+  return await response.json()
 }
 
 window.dialAddress = async (address) => {
@@ -993,3 +1089,12 @@ window.fetchPrevAddresses = async () => {
     console.error('Unable to fetch prev addresses', error)
   }
 }
+
+let debounceTimeout
+searchInput.addEventListener('input', () => {
+  clearTimeout(debounceTimeout)
+  // Search after 1 seconds when user stops typing
+  debounceTimeout = setTimeout(fetchAddresses, 1000)
+})
+
+searchType.addEventListener('change', fetchAddresses)
