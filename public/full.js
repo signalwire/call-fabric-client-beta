@@ -376,13 +376,20 @@ window.connect = async () => {
   connectStatus.innerHTML = 'Connecting...'
 
   // Set a node_id for steering
-  const steeringId = undefined
+  const steeringId = () => {
+
+    const formValue= document.getElementById('steeringId').value;
+
+    return !!formValue && formValue.trim().length ? formValue.trim() : undefined;
+  }
+
+
 
   const call = await client.dial({
     to: document.getElementById('destination').value,
     logLevel: 'debug',
     debug: { logWsTraffic: true },
-    nodeId: steeringId,
+    nodeId: steeringId(),
   })
 
   window.__call = call
