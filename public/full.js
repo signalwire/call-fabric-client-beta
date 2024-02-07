@@ -355,7 +355,7 @@ function restoreUI() {
 async function getClient() {
   if (!client && _token) {
     client = await SWire({
-      host: _host,
+      host: !!_host && _host.trim().length ? _host : undefined,
       token: _token,
       rootElement: document.getElementById('rootElement'),
     })
