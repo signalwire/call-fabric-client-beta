@@ -72,6 +72,7 @@ async function getSubscriberToken(reference, password) {
     reference: reference,
     password: password,
     application_id: process.env.OAUTH_APPLICATION_ID,
+    ch: process.env.SAT_CH,
   }
 
   return await apiRequest(
