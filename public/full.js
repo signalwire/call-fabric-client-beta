@@ -531,7 +531,7 @@ window.hangup = () => {
     micAnalyzer.destroy()
   }
 
-  if (roomObj) {
+  if (roomObj && roomObj.state !== 'destroy') {
     roomObj.hangup()
   }
 
