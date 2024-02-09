@@ -3,8 +3,6 @@ name: Release Deploy
 on:
   release:
     types: [published]
-  pull_request:
-    branches: ['main']
 
 jobs:
   deploy:
