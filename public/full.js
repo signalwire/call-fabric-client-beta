@@ -943,6 +943,29 @@ function updateAddressModal(address) {
   })
 }
 
+function updateMembersUI() {
+
+  const createMemberItem = (member) => {
+    const displayName = 'jpsantos'
+
+    const listItem = document.createElement('li')
+
+    const row = document.createElement('div');
+    row.className = 'row p-0';
+    listItem.appendChild(row);
+
+    const displayNameDiv = document.createElement('div')
+    displayName.textContent = displayName;
+    row.appendChild(displayNameDiv)
+
+    const btnGroup = document.createElement('div');
+    row.appendChild(btnGroup)
+
+
+
+  }
+}
+
 function updateAddressUI() {
   addressesCard.classList.remove('d-none')
   const addressesDiv = document.getElementById('addresses')
