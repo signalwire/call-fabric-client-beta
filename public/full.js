@@ -446,11 +446,18 @@ window.connect = async () => {
     console.debug('>> room.ended', params)
     hangup()
   })
-  roomObj.on('member.joined', (params) =>
+  roomObj.on('member.joined', (params) => {
     console.debug('>> member.joined', params)
-  )
-  roomObj.on('member.updated', (params) =>
+    window.__membersData = window.__membersData || {} 
+    window.__membersData[params.member_id] = params
+    updateMembersUI()
+  })
+  roomObj.on('member.updated', (params) => {
     console.debug('>> member.updated', params)
+    window.__membersData = window.__membersData || {} 
+    window.__membersData[params.member_id] = params
+    updateMembersUI()
+  }
   )
 
   roomObj.on('member.updated.audio_muted', (params) =>
@@ -460,7 +467,13 @@ window.connect = async () => {
     console.debug('>> member.updated.video_muted', params)
   )
 
-  roomObj.on('member.left', (params) => console.debug('>> member.left', params))
+  roomObj.on('member.left', (params) => {
+    console.debug('>> member.left', params)
+    if(window.__membersData[params.member_id]) {
+      delete window.__membersData[params.member_id]
+    }
+  })
+
   roomObj.on('member.talking', (params) =>
     console.debug('>> member.talking', params)
   )
@@ -944,10 +957,13 @@ function updateAddressModal(address) {
 }
 
 function updateMembersUI() {
+  membersCardList.classList.remove('d-none')
+  const membersDiv = document.getElementById('members')
+  membersDiv.innerHTML = ''
+  const { members } = window.__membersData
 
   const createMemberItem = (member) => {
-    const displayName = 'jpsantos'
-
+    
     const listItem = document.createElement('li')
 
     const row = document.createElement('div');
@@ -955,15 +971,17 @@ function updateMembersUI() {
     listItem.appendChild(row);
 
     const displayNameDiv = document.createElement('div')
-    displayName.textContent = displayName;
+    displayName.textContent = 'member'
     row.appendChild(displayNameDiv)
 
     const btnGroup = document.createElement('div');
     row.appendChild(btnGroup)
-
-
-
   }
+
+  members
+    .map(createMemberItem)
+    .forEach((memberCard) => membersDiv.appendChild(memberCard))
+
 }
 
 function updateAddressUI() {
