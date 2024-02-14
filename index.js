@@ -5,6 +5,8 @@ const app = express()
 const base64url = require('base64url')
 const crypto = require('crypto')
 
+const PORT = process.env.PORT || 3000
+
 app.set('view engine', 'ejs')
 app.use(express.urlencoded({ extended: true }))
 app.use(express.json())
@@ -166,7 +168,7 @@ app.get('/subscriber', (req, res) => {
 app.post('/subscriber', async (req, res) => {
   console.log('process subscriber')
 
-  const { reference, password } = req.body;
+  const { reference, password } = req.body
 
   try {
     const tokenData = await getSubscriberToken(reference, password)
@@ -178,7 +180,9 @@ app.post('/subscriber', async (req, res) => {
     res.redirect('/')
   } catch (error) {
     console.error(error)
-    res.status(500).send('<h1>An error occurred</h1><p>' + error.message + '</p>')
+    res
+      .status(500)
+      .send('<h1>An error occurred</h1><p>' + error.message + '</p>')
   }
 })
 
@@ -192,6 +196,6 @@ app.get('/service-worker.js', async (req, res) => {
   })
 })
 
-app.listen(process.env.PORT || 3000, () => {
-  console.log('Server running on port 3000')
+app.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`)
 })
