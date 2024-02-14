@@ -884,6 +884,37 @@ function isBlank(str) {
   return str === null || str === undefined || str === '' || str === 'null'
 }
 
+/** ======= Tab utilities start ======= */
+
+function toggleTabState(activeButtonName) {
+  const config = [
+    {
+      name: 'Directory',
+      button: document.querySelector('button[name="Directory"]'),
+      card: document.getElementById('addressCard'),
+    },
+    {
+      name: 'History',
+      button: document.querySelector('button[name="History"]'),
+      card: document.getElementById('historyCard'),
+    },
+  ]
+
+  config.forEach(({ name, button, card }) => {
+    if (name === activeButtonName) {
+      button.classList.add('active', 'text-black')
+      button.classList.remove('text-secondary')
+      card.classList.remove('d-none')
+    } else {
+      button.classList.remove('active', 'text-black')
+      button.classList.add('text-secondary')
+      card.classList.add('d-none')
+    }
+  })
+}
+
+/** ======= Tab utilities end ======= */
+
 /** ======= Address utilities start ======= */
 function setupAddressModal() {
   const addressModal = document.getElementById('addressModal')
@@ -1094,34 +1125,6 @@ searchInput.addEventListener('input', () => {
 searchType.addEventListener('change', fetchAddresses)
 
 /** ======= Address utilities end ======= */
-
-// Function to toggle both button states and card visibility of Tab
-function toggleTabState(activeButtonName) {
-  const config = [
-    {
-      name: 'Directory',
-      button: document.querySelector('button[name="Directory"]'),
-      card: document.getElementById('addressCard'),
-    },
-    {
-      name: 'History',
-      button: document.querySelector('button[name="History"]'),
-      card: document.getElementById('historyCard'),
-    },
-  ]
-
-  config.forEach(({ name, button, card }) => {
-    if (name === activeButtonName) {
-      button.classList.add('active', 'text-black')
-      button.classList.remove('text-secondary')
-      card.classList.remove('d-none')
-    } else {
-      button.classList.remove('active', 'text-black')
-      button.classList.add('text-secondary')
-      card.classList.add('d-none')
-    }
-  })
-}
 
 /** ======= History utilities start ======= */
 
