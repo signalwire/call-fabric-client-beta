@@ -368,6 +368,8 @@ async function getClient() {
  * Connect with Relay creating a client and attaching all the event handler.
  */
 window.connect = async () => {
+  window.__membersData = {}
+
   if (!_token) return
 
   const client = await getClient()
@@ -449,13 +451,13 @@ window.connect = async () => {
   roomObj.on('member.joined', (params) => {
     console.debug('>> member.joined', params)
     window.__membersData = window.__membersData || {} 
-    window.__membersData[params.member_id] = params
+    window.__membersData[params.id] = params
     updateMembersUI()
   })
   roomObj.on('member.updated', (params) => {
     console.debug('>> member.updated', params)
     window.__membersData = window.__membersData || {} 
-    window.__membersData[params.member_id] = params
+    window.__membersData[params.id] = params
     updateMembersUI()
   }
   )
@@ -622,6 +624,14 @@ window.muteSelf = () => {
 
 window.unmuteSelf = () => {
   roomObj.audioUnmute()
+}
+
+window.muteMember = (id) => {
+  roomObj.audioMute({ memberId: id})
+}
+
+window.unmuteMember = (id) => {
+  roomObj.audioUnmute({ memberId: id })
 }
 
 window.muteVideoAll = () => {
@@ -957,28 +967,165 @@ function updateAddressModal(address) {
 }
 
 function updateMembersUI() {
-  membersCardList.classList.remove('d-none')
   const membersDiv = document.getElementById('members')
   membersDiv.innerHTML = ''
-  const { members } = window.__membersData
+  const members = window.__membersData
 
   const createMemberItem = (member) => {
+
+    const createChildElement = (options) => {
+      const el = document.createElement(options.tag)
+      
+      Object.entries(options).forEach(([key, value]) => {
+        if(['tag', 'parent'].includes(key)) return
+        el[key] = value
+      })
+
+      options.parent.appendChild(el);
+
+      return el;
+    }
     
     const listItem = document.createElement('li')
+    listItem.className = "list-group-item"
 
-    const row = document.createElement('div');
-    row.className = 'row p-0';
-    listItem.appendChild(row);
+    const memberDiv = document.createElement('div');
+    memberDiv.className = 'row p-0';
+    listItem.appendChild(memberDiv);
+    
+    createChildElement({
+      tag: 'div',
+      textContent: member.type,
+      className: 'badge bg-primary me-2',
+      parent: memberDiv
+    })
 
-    const displayNameDiv = document.createElement('div')
-    displayName.textContent = 'member'
-    row.appendChild(displayNameDiv)
+    createChildElement({
+      tag: 'div',
+      textContent: member.id,
+      parent: memberDiv
+    })
 
-    const btnGroup = document.createElement('div');
-    row.appendChild(btnGroup)
+    createChildElement({
+      tag: 'div',
+      textContent: member.name,
+      parent: memberDiv
+    })
+
+    createChildElement({
+      tag: 'div',
+      textContent: `${member.currentPosition}=>${member.requestedPosition}`,
+      parent: memberDiv
+    })
+
+    createChildElement({
+      tag: 'div',
+      textContent:  member.meta ? Object.entries(member.meta).reduce((previous, [key, value])=> {
+        return `${previous},${key}:${value}`
+      }, '') : 'no meta',
+      parent: memberDiv
+    })
+
+    createChildElement({
+      tag: 'div',
+      textContent: `visible:${member.visible}`,
+      parent: memberDiv
+    })
+
+    createChildElement({
+      tag: 'div',
+      textContent: `audio muted:${member.audio_muted}`,
+      parent: memberDiv
+    })
+
+    createChildElement({
+      tag: 'div',
+      textContent: `video muted:${member.video_muted}`,
+      parent: memberDiv
+    })
+
+    createChildElement({
+      tag: 'div',
+      textContent: `deaf:${member.deaf}`,
+      parent: memberDiv
+    })
+
+    createChildElement({
+      tag: 'div',
+      textContent: `talking: ${member.talking}`,
+      parent: memberDiv
+    })
+
+    createChildElement({
+      tag: 'div',
+      textContent: `handraised: ${member.handraised}`,
+      parent: memberDiv
+    })
+
+    createChildElement({
+      tag: 'div',
+      textContent: `input volume: ${member.input_volume}`,
+      parent: memberDiv
+    })
+
+    createChildElement({
+      tag: 'div',
+      textContent: `input sensitivity: ${member.input_sensitivity}`,
+      parent: memberDiv
+    })
+
+    createChildElement({
+      tag: 'div',
+      textContent: `input volume: ${member.output_volume}`,
+      parent: memberDiv
+    })
+
+    const actionsDiv = createChildElement({
+      tag: 'div',
+      className: 'btn-group-vertical btn-group-sm',
+      parent: memberDiv
+    })
+
+    createChildElement({
+      tag: 'a',
+      className: 'btn btn-warning',
+      textContent: 'mute audio',
+      href: '#',
+      onclick: () => window.muteMember(member.id),
+      parent: actionsDiv
+    })
+    createChildElement({
+      tag: 'a',
+      className: 'btn btn-warning',
+      textContent: 'unmute audio',
+      href: '#',
+      onclick: () => window.unmuteMember(member.id),
+      parent: actionsDiv
+    })
+    createChildElement({
+      tag: 'a',
+      className: 'btn btn-warning',
+      textContent: 'mute video',
+      href: '#',
+      onclick: () => console.log('### Nothing Executed ###'),
+      parent: actionsDiv
+    })
+    createChildElement({
+      tag: 'a',
+      className: 'btn btn-warning',
+      textContent: 'unmute video',
+      href: '#',
+      onclick: () => console.log('### Nothing Executed ###'),
+      parent: actionsDiv
+    })
+
+    memberDiv.appendChild(actionsDiv)
+
+    return listItem
+
   }
 
-  members
+  Object.values(members)
     .map(createMemberItem)
     .forEach((memberCard) => membersDiv.appendChild(memberCard))
 
