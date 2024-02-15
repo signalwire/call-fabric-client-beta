@@ -343,7 +343,7 @@ function restoreUI() {
   btnDisconnect.classList.add('d-none')
   btnAnswer.classList.add('d-none')
   btnReject.classList.add('d-none')
-  addressesCard.classList.remove('d-none')
+  tabs.classList.remove('d-none')
   connectStatus.innerHTML = 'Not Connected'
 
   inCallElements.forEach((button) => {
@@ -368,6 +368,10 @@ async function getClient() {
  * Connect with Relay creating a client and attaching all the event handler.
  */
 window.connect = async () => {
+  if (!_token) {
+    console.error('Auth required!')
+    return
+  }
   window.__membersData = {}
 
   if (!_token) return
@@ -379,13 +383,10 @@ window.connect = async () => {
 
   // Set a node_id for steering
   const steeringId = () => {
+    const formValue = document.getElementById('steeringId').value
 
-    const formValue= document.getElementById('steeringId').value;
-
-    return !!formValue && formValue.trim().length ? formValue.trim() : undefined;
+    return !!formValue && formValue.trim().length ? formValue.trim() : undefined
   }
-
-
 
   const call = await client.dial({
     to: document.getElementById('destination').value,
@@ -519,7 +520,7 @@ function updateUIConnected() {
   btnConnect.classList.add('d-none')
   btnAnswer.classList.add('d-none')
   btnReject.classList.add('d-none')
-  addressesCard.classList.add('d-none')
+  tabs.classList.add('d-none')
   btnDisconnect.classList.remove('d-none')
   connectStatus.innerHTML = 'Connected'
 
@@ -907,17 +908,51 @@ const escapeHTML = (str) => {
 }
 
 function isBlank(str) {
-  return str === null || str === undefined || str === '' || str === 'null';
+  return str === null || str === undefined || str === '' || str === 'null'
 }
 
+/** ======= Tab utilities start ======= */
+
+function toggleTabState(activeButtonName) {
+  const config = [
+    {
+      name: 'Directory',
+      button: document.querySelector('button[name="Directory"]'),
+      card: document.getElementById('addressCard'),
+    },
+    {
+      name: 'History',
+      button: document.querySelector('button[name="History"]'),
+      card: document.getElementById('historyCard'),
+    },
+  ]
+
+  config.forEach(({ name, button, card }) => {
+    if (name === activeButtonName) {
+      button.classList.add('active', 'text-black')
+      button.classList.remove('text-secondary')
+      card.classList.remove('d-none')
+    } else {
+      button.classList.remove('active', 'text-black')
+      button.classList.add('text-secondary')
+      card.classList.add('d-none')
+    }
+  })
+}
+
+/** ======= Tab utilities end ======= */
+
+/** ======= Address utilities start ======= */
 function setupAddressModal() {
   const addressModal = document.getElementById('addressModal')
   if (!addressModal) return
 
-  addressModal.addEventListener('show.bs.modal', event => {
+  addressModal.addEventListener('show.bs.modal', (event) => {
     const button = event.relatedTarget
     const addressName = button.getAttribute('data-bs-name')
-    const address = __addressData.addresses.find(address => address.name === addressName)
+    const address = __addressData.addresses.find(
+      (address) => address.name === addressName
+    )
     updateAddressModal(address)
 
     // TODO: load recent conversations associated with address
@@ -925,8 +960,16 @@ function setupAddressModal() {
     // renderConversationHistory(messages)
   })
 
-  addressModal.addEventListener('hidden.bs.modal', event => {
-    updateAddressModal({name:'',display_name:'',resouce_id:null,cover_url:null,preview_url:null,type:null,channels: []})
+  addressModal.addEventListener('hidden.bs.modal', (event) => {
+    updateAddressModal({
+      name: '',
+      display_name: '',
+      resouce_id: null,
+      cover_url: null,
+      preview_url: null,
+      type: null,
+      channels: [],
+    })
   })
 }
 
@@ -934,18 +977,27 @@ function updateAddressModal(address) {
   const addressModal = document.getElementById('addressModal')
   if (!addressModal) return
 
-  const addressDisplayName = addressModal.querySelector('.modal-body .address-display-name')
-  const addressAvatar = addressModal.querySelector('.modal-body .address-avatar')
+  const addressDisplayName = addressModal.querySelector(
+    '.modal-body .address-display-name'
+  )
+  const addressAvatar = addressModal.querySelector(
+    '.modal-body .address-avatar'
+  )
   const addressBadge = addressModal.querySelector('.modal-body .address-badge')
   const channelButtons = {
     audio: addressModal.querySelector('.modal-body .btn-address-dial-audio'),
     video: addressModal.querySelector('.modal-body .btn-address-dial-video'),
-    messaging: addressModal.querySelector('.modal-body .btn-address-dial-messaging')
-  };
+    messaging: addressModal.querySelector(
+      '.modal-body .btn-address-dial-messaging'
+    ),
+  }
 
   addressDisplayName.textContent = address.display_name
   addressBadge.textContent = address.type
-  addressAvatar.src = address.cover_url || address.preview_url || `https://i.pravatar.cc/125?u=${address.resource_id}`
+  addressAvatar.src =
+    address.cover_url ||
+    address.preview_url ||
+    `https://i.pravatar.cc/125?u=${address.resource_id}`
 
   // disable all channel buttons
   for (let channelButton in channelButtons) {
@@ -1132,51 +1184,44 @@ function updateMembersUI() {
 }
 
 function updateAddressUI() {
-  addressesCard.classList.remove('d-none')
-  const addressesDiv = document.getElementById('addresses')
-  addressesDiv.innerHTML = ''
-  const { addresses } = window.__addressData
+  const addressDiv = document.getElementById('addresses')
+  const { data: addresses } = window.__addressData
 
   const createListItem = (address) => {
     const displayName = escapeHTML(address.display_name)
-    const name = escapeHTML(address.name)
     const type = escapeHTML(address.type)
-
-    const dialList = document.createElement('ul')
-    dialList.className = 'list-group list-group-flush'
 
     const listItem = document.createElement('li')
     listItem.className = 'list-group-item'
-    //  container d-flex align-items-center gap-2
 
-    const container = document.createElement('div');
-    container.className = 'container p-0';
-    listItem.appendChild(container);
+    const container = document.createElement('div')
+    container.className = 'container p-0'
+    listItem.appendChild(container)
 
-    const row = document.createElement('div');
-    row.className = 'row';
-    container.appendChild(row);
+    const row = document.createElement('div')
+    row.className = 'row'
+    container.appendChild(row)
 
-    const col1 = document.createElement('div');
-    col1.className = 'col-10';
-    row.appendChild(col1);
+    const col1 = document.createElement('div')
+    col1.className = 'col-10'
+    row.appendChild(col1)
 
-    const badge = document.createElement('span');
-    badge.className = 'badge bg-primary me-2';
-    badge.textContent = type;
-    col1.appendChild(badge);
+    const badge = document.createElement('span')
+    badge.className = 'badge bg-primary me-2'
+    badge.textContent = type
+    col1.appendChild(badge)
 
-    const addressNameLink = document.createElement('a');
-    addressNameLink.textContent = displayName;
-    addressNameLink.href = '#';
-    addressNameLink.dataset.bsToggle = 'modal';
-    addressNameLink.dataset.bsTarget = '#addressModal';
-    addressNameLink.dataset.bsName = address.name;
-    col1.appendChild(addressNameLink);
+    const addressNameLink = document.createElement('a')
+    addressNameLink.textContent = displayName
+    addressNameLink.href = '#'
+    addressNameLink.dataset.bsToggle = 'modal'
+    addressNameLink.dataset.bsTarget = '#addressModal'
+    addressNameLink.dataset.bsName = address.name
+    col1.appendChild(addressNameLink)
 
-    const col2 = document.createElement('div');
-    col2.className = 'col';
-    row.appendChild(col2);
+    const col2 = document.createElement('div')
+    col2.className = 'col'
+    row.appendChild(col2)
 
     Object.entries(address.channels).forEach(([channelName, channelValue]) => {
       const button = document.createElement('button')
@@ -1185,71 +1230,50 @@ function updateAddressUI() {
       // button.textContent = `Dial ${channelName}`
       button.addEventListener('click', () => dialAddress(channelValue))
 
-      const icon = document.createElement('i');
-      if (channelName === "messaging") {
-        icon.className = 'bi bi-chat';
-      } else if (channelName === "video") {
-        icon.className = 'bi bi-camera-video';
-      } else if (channelName === "audio") {
-        icon.className = 'bi bi-phone';
+      const icon = document.createElement('i')
+      if (channelName === 'messaging') {
+        icon.className = 'bi bi-chat'
+      } else if (channelName === 'video') {
+        icon.className = 'bi bi-camera-video'
+      } else if (channelName === 'audio') {
+        icon.className = 'bi bi-phone'
       }
-      button.appendChild(icon);
+      button.appendChild(icon)
 
-      col2.appendChild(button);
+      col2.appendChild(button)
     })
 
     const row2 = document.createElement('div')
     const addressUrl = Object.values(address.channels)[0]
-    let strippedUrl = addressUrl.split('?')[0];
+    let strippedUrl = addressUrl.split('?')[0]
     row2.textContent = strippedUrl
     container.appendChild(row2)
 
     return listItem
   }
 
-  addresses
-    .map(createListItem)
-    .forEach((item) => addressesDiv.appendChild(item))
+  const addressUl = addressDiv.querySelector('ul')
+  addressUl.innerHTML = ''
+  addresses.map(createListItem).forEach((item) => addressUl.appendChild(item))
 }
 
 async function fetchAddresses() {
+  toggleTabState('Directory')
   if (!client) return
   try {
     const searchText = searchInput.value
     const selectedType = searchType.value
 
-    const addressData = await client.getAddresses({
+    const addressData = await client.address.getAddresses({
       type: selectedType === 'all' ? undefined : selectedType,
       displayName: !searchText.length ? undefined : searchText,
     })
     window.__addressData = addressData
     updateAddressUI()
-    setupAddressModal()    
+    setupAddressModal()
   } catch (error) {
     console.error('Unable to fetch addresses', error)
   }
-}
-
-// Just a placeholder until ready. We can prepare `client` methods as well
-async function fetchConversationHistory(subscriberId, addressId) {
-  const queryParams = new URLSearchParams({
-    subscriber_id: subscriberId,
-    address_id: addressId,
-    limit: 10,
-  })
-  
-  const response = await fetch(`${_fabricApiUrl}/conversations?${queryParams}`, {
-    headers: { 
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${_token}`
-    }
-  })
-
-  if (!response.ok) {
-    throw new Error('Unable to fetch conversation history')
-  }
-
-  return await response.json()
 }
 
 window.dialAddress = async (address) => {
@@ -1288,3 +1312,61 @@ searchInput.addEventListener('input', () => {
 })
 
 searchType.addEventListener('change', fetchAddresses)
+
+/** ======= Address utilities end ======= */
+
+/** ======= History utilities start ======= */
+function createConversationListItem(convo) {
+  const item = document.createElement('li')
+  item.classList.add('list-group-item')
+
+  const convoDiv = document.createElement('span')
+  convoDiv.textContent = `Conversation name: ${convo.name}`
+  item.appendChild(convoDiv)
+
+  const lastMessageDiv = document.createElement('div')
+  const dateOptions = {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: 'numeric',
+    hour12: true,
+  }
+  const formattedDate = new Date(convo.last_message_at).toLocaleString(
+    'en-US',
+    dateOptions
+  )
+  lastMessageDiv.textContent = `Last message at: ${formattedDate.replace(
+    ',',
+    ' at'
+  )}`
+  lastMessageDiv.classList.add('text-secondary')
+  item.appendChild(lastMessageDiv)
+  return item
+}
+
+function updateHistoryUI() {
+  const historyDiv = document.getElementById('histories')
+  const { data: histories } = window.__historyData
+
+  const historyUl = historyDiv.querySelector('ul')
+  historyUl.innerHTML = ''
+  histories
+    .map(createConversationListItem)
+    .forEach((item) => historyUl.appendChild(item))
+}
+
+async function fetchHistories() {
+  toggleTabState('History')
+  if (!client) return
+  try {
+    const historyData = await client.conversation.getConversations()
+    window.__historyData = historyData
+    updateHistoryUI()
+  } catch (error) {
+    console.error('Unable to fetch histories', error)
+  }
+}
+
+/** ======= History utilities end ======= */
