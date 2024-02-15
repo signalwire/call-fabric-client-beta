@@ -368,7 +368,10 @@ async function getClient() {
  * Connect with Relay creating a client and attaching all the event handler.
  */
 window.connect = async () => {
-  if (!_token) return
+  if (!_token) {
+    console.error('Auth required!')
+    return
+  }
 
   const client = await getClient()
   window.__client = client
@@ -993,16 +996,11 @@ function updateAddressModal(address) {
 
 function updateAddressUI() {
   const addressDiv = document.getElementById('addresses')
-  addressDiv.innerHTML = ''
-  const { addresses } = window.__addressData
+  const { data: addresses } = window.__addressData
 
   const createListItem = (address) => {
     const displayName = escapeHTML(address.display_name)
-    const name = escapeHTML(address.name)
     const type = escapeHTML(address.type)
-
-    const dialList = document.createElement('ul')
-    dialList.className = 'list-group list-group-flush'
 
     const listItem = document.createElement('li')
     listItem.className = 'list-group-item'
@@ -1065,7 +1063,9 @@ function updateAddressUI() {
     return listItem
   }
 
-  addresses.map(createListItem).forEach((item) => addressDiv.appendChild(item))
+  const addressUl = addressDiv.querySelector('ul')
+  addressUl.innerHTML = ''
+  addresses.map(createListItem).forEach((item) => addressUl.appendChild(item))
 }
 
 async function fetchAddresses() {
@@ -1075,7 +1075,7 @@ async function fetchAddresses() {
     const searchText = searchInput.value
     const selectedType = searchType.value
 
-    const addressData = await client.getAddresses({
+    const addressData = await client.address.getAddresses({
       type: selectedType === 'all' ? undefined : selectedType,
       displayName: !searchText.length ? undefined : searchText,
     })
@@ -1127,6 +1127,46 @@ searchType.addEventListener('change', fetchAddresses)
 /** ======= Address utilities end ======= */
 
 /** ======= History utilities start ======= */
+function createConversationListItem(convo) {
+  const item = document.createElement('li')
+  item.classList.add('list-group-item')
+
+  const convoDiv = document.createElement('span')
+  convoDiv.textContent = `Conversation name: ${convo.name}`
+  item.appendChild(convoDiv)
+
+  const lastMessageDiv = document.createElement('div')
+  const dateOptions = {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: 'numeric',
+    hour12: true,
+  }
+  const formattedDate = new Date(convo.last_message_at).toLocaleString(
+    'en-US',
+    dateOptions
+  )
+  lastMessageDiv.textContent = `Last message at: ${formattedDate.replace(
+    ',',
+    ' at'
+  )}`
+  lastMessageDiv.classList.add('text-secondary')
+  item.appendChild(lastMessageDiv)
+  return item
+}
+
+function updateHistoryUI() {
+  const historyDiv = document.getElementById('histories')
+  const { data: histories } = window.__historyData
+
+  const historyUl = historyDiv.querySelector('ul')
+  historyUl.innerHTML = ''
+  histories
+    .map(createConversationListItem)
+    .forEach((item) => historyUl.appendChild(item))
+}
 
 async function fetchHistories() {
   toggleTabState('History')
@@ -1134,6 +1174,7 @@ async function fetchHistories() {
   try {
     const historyData = await client.conversation.getConversations()
     window.__historyData = historyData
+    updateHistoryUI()
   } catch (error) {
     console.error('Unable to fetch histories', error)
   }
