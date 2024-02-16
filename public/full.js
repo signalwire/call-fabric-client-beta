@@ -874,7 +874,7 @@ window.ready(async function () {
   if (searchParams.has('inbound')) {
     await enablePushNotifications()
   }
-  await fetchAddresses()
+  Promise.all([fetchHistories(), fetchAddresses()])
 })
 
 const escapeHTML = (str) => {
@@ -919,81 +919,6 @@ function toggleTabState(activeButtonName) {
 /** ======= Tab utilities end ======= */
 
 /** ======= Address utilities start ======= */
-function setupAddressModal() {
-  const addressModal = document.getElementById('addressModal')
-  if (!addressModal) return
-
-  addressModal.addEventListener('show.bs.modal', (event) => {
-    const button = event.relatedTarget
-    const addressName = button.getAttribute('data-bs-name')
-    const address = __addressData.addresses.find(
-      (address) => address.name === addressName
-    )
-    updateAddressModal(address)
-
-    // TODO: load recent conversations associated with address
-    // messages = await fetchConversationHistory(__subscriberId, address.id)
-    // renderConversationHistory(messages)
-  })
-
-  addressModal.addEventListener('hidden.bs.modal', (event) => {
-    updateAddressModal({
-      name: '',
-      display_name: '',
-      resouce_id: null,
-      cover_url: null,
-      preview_url: null,
-      type: null,
-      channels: [],
-    })
-  })
-}
-
-function updateAddressModal(address) {
-  const addressModal = document.getElementById('addressModal')
-  if (!addressModal) return
-
-  const addressDisplayName = addressModal.querySelector(
-    '.modal-body .address-display-name'
-  )
-  const addressAvatar = addressModal.querySelector(
-    '.modal-body .address-avatar'
-  )
-  const addressBadge = addressModal.querySelector('.modal-body .address-badge')
-  const channelButtons = {
-    audio: addressModal.querySelector('.modal-body .btn-address-dial-audio'),
-    video: addressModal.querySelector('.modal-body .btn-address-dial-video'),
-    messaging: addressModal.querySelector(
-      '.modal-body .btn-address-dial-messaging'
-    ),
-  }
-
-  addressDisplayName.textContent = address.display_name
-  addressBadge.textContent = address.type
-  addressAvatar.src =
-    address.cover_url ||
-    address.preview_url ||
-    `https://i.pravatar.cc/125?u=${address.resource_id}`
-
-  // disable all channel buttons
-  for (let channelButton in channelButtons) {
-    channelButtons[channelButton].disabled = true
-  }
-
-  // re-enable appropriate channel buttons
-  Object.entries(address.channels).forEach(([channelName, channelValue]) => {
-    let button = channelButtons[channelName]
-    let clone = button.cloneNode(true)
-    clone.disabled = false
-    button.parentNode.replaceChild(clone, button)
-    clone.addEventListener('click', () => {
-      dialAddress(channelValue)
-      const addressModalInstance = bootstrap.Modal.getInstance(addressModal)
-      addressModalInstance.hide()
-    })
-  })
-}
-
 function updateAddressUI() {
   const addressDiv = document.getElementById('addresses')
   const { data: addresses } = window.__addressData
@@ -1022,12 +947,10 @@ function updateAddressUI() {
     badge.textContent = type
     col1.appendChild(badge)
 
-    const addressNameLink = document.createElement('a')
+    const addressNameLink = document.createElement('button')
     addressNameLink.textContent = displayName
-    addressNameLink.href = '#'
-    addressNameLink.dataset.bsToggle = 'modal'
-    addressNameLink.dataset.bsTarget = '#addressModal'
-    addressNameLink.dataset.bsName = address.name
+    addressNameLink.className = 'btn btn-link p-0'
+    addressNameLink.onclick = () => openMessageModal(address)
     col1.appendChild(addressNameLink)
 
     const col2 = document.createElement('div')
@@ -1038,7 +961,6 @@ function updateAddressUI() {
       const button = document.createElement('button')
       button.className = 'btn btn-sm btn-success'
 
-      // button.textContent = `Dial ${channelName}`
       button.addEventListener('click', () => dialAddress(channelValue))
 
       const icon = document.createElement('i')
@@ -1081,7 +1003,6 @@ async function fetchAddresses() {
     })
     window.__addressData = addressData
     updateAddressUI()
-    setupAddressModal()
   } catch (error) {
     console.error('Unable to fetch addresses', error)
   }
@@ -1127,15 +1048,7 @@ searchType.addEventListener('change', fetchAddresses)
 /** ======= Address utilities end ======= */
 
 /** ======= History utilities start ======= */
-function createConversationListItem(convo) {
-  const item = document.createElement('li')
-  item.classList.add('list-group-item')
-
-  const convoDiv = document.createElement('span')
-  convoDiv.textContent = `Conversation name: ${convo.name}`
-  item.appendChild(convoDiv)
-
-  const lastMessageDiv = document.createElement('div')
+function formatMessageDate(date) {
   const dateOptions = {
     year: 'numeric',
     month: 'short',
@@ -1144,15 +1057,34 @@ function createConversationListItem(convo) {
     minute: 'numeric',
     hour12: true,
   }
-  const formattedDate = new Date(convo.last_message_at).toLocaleString(
-    'en-US',
-    dateOptions
-  )
-  lastMessageDiv.textContent = `Last message at: ${formattedDate.replace(
-    ',',
-    ' at'
+  return new Date(date).toLocaleString('en-US', dateOptions)
+}
+
+function createConversationListItem(convo) {
+  const item = document.createElement('li')
+  item.classList.add('list-group-item')
+
+  const convoDiv = document.createElement('div')
+  convoDiv.className = 'd-flex align-items-center'
+
+  const labelSpan = document.createElement('span')
+  labelSpan.textContent = 'Conversation name: '
+  labelSpan.className = 'me-1'
+
+  const convoNameLink = document.createElement('button')
+  convoNameLink.textContent = convo.name
+  convoNameLink.className = 'btn btn-link p-0'
+  convoNameLink.onclick = () => openMessageModal(convo)
+
+  convoDiv.appendChild(labelSpan)
+  convoDiv.appendChild(convoNameLink)
+  item.appendChild(convoDiv)
+
+  const lastMessageDiv = document.createElement('div')
+  lastMessageDiv.textContent = `Last message at: ${formatMessageDate(
+    convo.last_message_at
   )}`
-  lastMessageDiv.classList.add('text-secondary')
+  lastMessageDiv.classList.add('small', 'text-secondary')
   item.appendChild(lastMessageDiv)
   return item
 }
@@ -1175,9 +1107,154 @@ async function fetchHistories() {
     const historyData = await client.conversation.getConversations()
     window.__historyData = historyData
     updateHistoryUI()
+    subscribeToNewConversation()
   } catch (error) {
     console.error('Unable to fetch histories', error)
   }
 }
 
+let isConvoSubscribed = false
+function subscribeToNewConversation() {
+  if (!isConvoSubscribed) {
+    client.conversation.subscribe((newConvo) => {
+      const historyDiv = document.getElementById('histories')
+      const historyUl = historyDiv.querySelector('ul')
+      const newListItem = createConversationListItem(newConvo)
+      if (historyUl.firstChild) {
+        historyUl.insertBefore(newListItem, historyUl.firstChild)
+      } else {
+        historyUl.appendChild(newListItem)
+      }
+    })
+    isConvoSubscribed = true
+  }
+}
+
 /** ======= History utilities end ======= */
+
+/** ======= Message utilities start ======= */
+function createMessageListItem(msg) {
+  const listItem = document.createElement('li')
+  listItem.classList.add('list-group-item')
+  const formattedTimestamp = formatMessageDate(msg.ts * 1000)
+  listItem.innerHTML = `
+    <div class="d-flex flex-column">
+      <div class="d-flex justify-content-between align-items-center">
+        <h6 class="mb-0 text-capitalize">${msg.type ?? 'unknown'}</h6>
+        <div class="d-flex align-items-center gap-1">
+          <span class="badge bg-info">${msg.subtype ?? 'unknown'}</span>
+          <span class="badge bg-success">${msg.kind ?? 'unknown'}</span>
+        </div>
+      </div>
+      <p class="text-muted small mb-0">${formattedTimestamp}</p>
+    </div>
+  `
+  return listItem
+}
+
+const modalDiv = document.getElementById('messageModal')
+
+modalDiv.addEventListener('hidden.bs.modal', clearModalContent)
+
+function clearModalContent() {
+  const titleH2 = modalDiv.querySelector('.title')
+  const typeBadgeSpan = modalDiv.querySelector('.type-badge')
+  const contactBtnDiv = modalDiv.querySelector('.contact-buttons')
+  const messageList = modalDiv.querySelector('#messageList')
+  const loaderListItem = modalDiv.querySelector('#messageList li')
+  const avatarImage = modalDiv.querySelector('.avatar')
+  titleH2.textContent = ''
+  typeBadgeSpan.textContent = ''
+  contactBtnDiv.classList.add('d-none')
+  // Remove all the message list item except the first one (loader)
+  Array.from(messageList.children)
+    .slice(1)
+    .forEach((item) => item.remove())
+  loaderListItem.classList.remove('d-none')
+  // Set the new image URL to the avatar image for the next time the modal opens
+  const newImageUrl = `https://i.pravatar.cc/125?img=${
+    Math.floor(Math.random() * 70) + 1
+  }`
+  if (avatarImage) {
+    avatarImage.src = newImageUrl
+  }
+}
+
+async function openMessageModal(data) {
+  const modal = new bootstrap.Modal(modalDiv)
+  modal.show()
+
+  const titleH2 = modalDiv.querySelector('.title')
+  titleH2.textContent = data.display_name || data.name || 'John Doe'
+
+  if (data.type) {
+    const typeBadgeSpan = modalDiv.querySelector('.type-badge')
+    typeBadgeSpan.textContent = data.type
+    typeBadgeSpan.classList.add('badge', 'bg-primary')
+  }
+
+  if (data.channels) {
+    const contactBtnDiv = modalDiv.querySelector('.contact-buttons')
+    contactBtnDiv.classList.remove('d-none')
+    if (data.channels.audio) {
+      const audioBtn = contactBtnDiv.querySelector('.btn-dial-audio')
+      audioBtn.classList.remove('d-none')
+      audioBtn.addEventListener('click', () => {
+        dialAddress(data.channels.audio)
+        modal.hide()
+      })
+    }
+    if (data.channels.video) {
+      const videoBtn = contactBtnDiv.querySelector('.btn-dial-video')
+      videoBtn.classList.remove('d-none')
+      videoBtn.addEventListener('click', () => {
+        dialAddress(data.channels.video)
+        modal.hide()
+      })
+    }
+    if (data.channels.messaging) {
+      const messagingBtn = contactBtnDiv.querySelector('.btn-dial-messaging')
+      messagingBtn.classList.remove('d-none')
+      messagingBtn.addEventListener('click', () => {
+        dialAddress(data.channels.messaging)
+        modal.hide()
+      })
+    }
+  }
+
+  // Fetch messages and populate the UI
+  await fetchMessages(data.id)
+}
+
+function updateMessageUI(messages) {
+  const loaderListItem = document.querySelector('#messageList li')
+  loaderListItem.classList.add('d-none')
+  if (!messages?.length) {
+    const noMsglistItem = document.createElement('li')
+    noMsglistItem.classList.add('list-group-item')
+    noMsglistItem.innerHTML = `
+      <div class="d-flex justify-content-center">
+          <h6 class="my-2">No messages yet!</h6>
+      </div>
+    `
+    messageList.appendChild(noMsglistItem)
+    return
+  }
+  messages
+    .map(createMessageListItem)
+    .forEach((li) => messageList.appendChild(li))
+}
+
+async function fetchMessages(id) {
+  if (!client) return
+  try {
+    const messages = await client.conversation.getConversationMessages({
+      addressId: id,
+    })
+    updateMessageUI(messages.data)
+  } catch (error) {
+    console.error('Unable to fetch messages', error)
+  }
+}
+
+/** ======= Message utilities end ======= */
