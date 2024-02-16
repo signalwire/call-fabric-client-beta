@@ -1160,8 +1160,9 @@ function clearModalContent() {
   const titleH2 = modalDiv.querySelector('.title')
   const typeBadgeSpan = modalDiv.querySelector('.type-badge')
   const contactBtnDiv = modalDiv.querySelector('.contact-buttons')
-  const messageList = document.querySelector('#messageList')
-  const loaderListItem = document.querySelector('#messageList li')
+  const messageList = modalDiv.querySelector('#messageList')
+  const loaderListItem = modalDiv.querySelector('#messageList li')
+  const avatarImage = modalDiv.querySelector('.avatar')
   titleH2.textContent = ''
   typeBadgeSpan.textContent = ''
   contactBtnDiv.classList.add('d-none')
@@ -1170,6 +1171,13 @@ function clearModalContent() {
     .slice(1)
     .forEach((item) => item.remove())
   loaderListItem.classList.remove('d-none')
+  // Set the new image URL to the avatar image for the next time the modal opens
+  const newImageUrl = `https://i.pravatar.cc/125?img=${
+    Math.floor(Math.random() * 70) + 1
+  }`
+  if (avatarImage) {
+    avatarImage.src = newImageUrl
+  }
 }
 
 async function openMessageModal(data) {
@@ -1177,7 +1185,7 @@ async function openMessageModal(data) {
   modal.show()
 
   const titleH2 = modalDiv.querySelector('.title')
-  titleH2.textContent = data.display_name || data.name
+  titleH2.textContent = data.display_name || data.name || 'John Doe'
 
   if (data.type) {
     const typeBadgeSpan = modalDiv.querySelector('.type-badge')
@@ -1215,8 +1223,10 @@ async function openMessageModal(data) {
   }
 
   // Fetch messages and populate the UI
-  const messageList = modalDiv.querySelector('#messageList')
-  const { data: messages } = await fetchMessages(data.id)
+  await fetchMessages(data.id)
+}
+
+function updateMessageUI(messages) {
   const loaderListItem = document.querySelector('#messageList li')
   loaderListItem.classList.add('d-none')
   if (!messages?.length) {
@@ -1241,7 +1251,7 @@ async function fetchMessages(id) {
     const messages = await client.conversation.getConversationMessages({
       addressId: id,
     })
-    return messages
+    updateMessageUI(messages.data)
   } catch (error) {
     console.error('Unable to fetch messages', error)
   }
