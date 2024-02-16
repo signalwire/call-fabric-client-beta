@@ -161,6 +161,21 @@
           </div>
         </div>
         <!-- Room controls end -->
+      
+        <!-- Conversation logs -->
+        <div id="controlConvo" class="row py-2 px-2">
+          <div class="card p-0">
+            <div class="card-header">
+              Conversation logs
+            </div>
+            <div class="card-body px-0 py-1">
+              <div class="overflow-auto" style="max-height: 200px; min-height: 100px;">
+                <ul id="liveMessageList" class="list-group list-group-flush mt-0"></ul>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Conversation logs end -->
       </div>
       <!-- Connect options end -->
 
@@ -241,21 +256,6 @@
           </div>
         </div>
         <!-- Root element (for SDK video) end -->
-
-        <!-- Conversation logs -->
-        <div id="controlConvo" class="row py-2 px-2 d-none">
-          <div class="card p-0">
-            <div class="card-header">
-              Conversation logs
-            </div>
-            <div class="card-body px-0 py-1">
-              <div class="overflow-auto" style="max-height: 200px;">
-                <ul id="liveMessageList" class="list-group list-group-flush mt-0"></ul>
-              </div>
-            </div>
-          </div>
-        </div>
-        <!-- Conversation logs end -->
 
         <!-- Mic/Speaker volume controls -->
         <div id="controlSliders" class="row py-2 d-none">

@@ -37,7 +37,6 @@ const inCallElements = [
   unmuteVideoSelfBtn,
   deafSelfBtn,
   undeafSelfBtn,
-  controlConvo,
   controlSliders,
   controlLayout,
   hideVMutedBtn,
@@ -346,7 +345,6 @@ function restoreUI() {
   btnReject.classList.add('d-none')
   tabs.classList.remove('d-none')
   connectStatus.innerHTML = 'Not Connected'
-  liveMessageList.textContent = ''
 
   inCallElements.forEach((button) => {
     button.classList.add('d-none')
@@ -1124,6 +1122,29 @@ async function fetchHistories() {
   }
 }
 
+function createLiveMessageListItem(msg) {
+  const listItem = document.createElement('li')
+  listItem.classList.add('list-group-item')
+  listItem.id = msg.id
+  const formattedTimestamp = formatMessageDate(msg.ts * 1000)
+  listItem.innerHTML = `
+    <div class="d-flex flex-column">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <h6 class="mb-0 text-capitalize">${msg.type ?? 'unknown'}</h6>
+          <p class="mb-1 fst-italic">${msg.conversation_name}</p>
+        <div>
+        <div class="d-flex align-items-center gap-1">
+          <span class="badge bg-info">${msg.subtype ?? 'unknown'}</span>
+          <span class="badge bg-success">${msg.kind ?? 'unknown'}</span>
+        </div>
+      </div>
+      <p class="text-muted small mb-0">${formattedTimestamp}</p>
+    </div>
+  `
+  return listItem
+}
+
 let isConvoSubscribed = false
 function subscribeToNewMessages() {
   if (!isConvoSubscribed) {
@@ -1151,7 +1172,7 @@ function subscribeToNewMessages() {
       // Update in call live messages
       // FIXME: Make sure the message is for the current call based on newMsg.conversation_id
       const liveMessageList = document.querySelector('#liveMessageList')
-      const newListItem = createMessageListItem(newMsg)
+      const newListItem = createLiveMessageListItem(newMsg)
       if (liveMessageList.firstChild) {
         liveMessageList.insertBefore(newListItem, liveMessageList.firstChild)
       } else {
