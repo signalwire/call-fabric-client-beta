@@ -44,12 +44,12 @@ async function apiRequest(uri, options) {
   return await response.json()
 }
 
-async function getAccessToken(code, verifier) {
+async function getAccessToken(code, verifier, currentHost) {
   const params = new URLSearchParams()
   params.append('client_id', process.env.OAUTH_CLIENT_ID)
   params.append('grant_type', 'authorization_code')
   params.append('code', code)
-  params.append('redirect_uri', process.env.OAUTH_REDIRECT_URI)
+  params.append('redirect_uri', `${currentHost}/callback`)
   params.append('code_verifier', verifier)
 
   return await apiRequest(process.env.OAUTH_TOKEN_URI, {
@@ -130,11 +130,12 @@ app.get('/oauth', (req, res) => {
   const challenge = base64url(
     crypto.createHash('sha256').update(verifier).digest()
   )
+  const currentHost = req.protocol + '://' + req.get('host');
 
   const queryParams = new URLSearchParams({
     response_type: 'code',
     client_id: process.env.OAUTH_CLIENT_ID,
-    redirect_uri: process.env.OAUTH_REDIRECT_URI,
+    redirect_uri: `${currentHost}/callback`,
     code_challenge: challenge,
     code_challenge_method: 'S256',
   })
@@ -146,9 +147,10 @@ app.get('/oauth', (req, res) => {
 
 app.get('/callback', async (req, res) => {
   console.log('oauth: process callback')
+  const currentHost = req.protocol + '://' + req.get('host');
 
   try {
-    const tokenData = await getAccessToken(req.query.code, req.session.verifier)
+    const tokenData = await getAccessToken(req.query.code, req.session.verifier, currentHost)
     const token = tokenData.access_token
     req.session.token = token
 
