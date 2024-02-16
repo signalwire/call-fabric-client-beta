@@ -33,6 +33,11 @@ const FIREBASE_CONFIG = JSON.stringify({
 const host = process.env.RELAY_HOST
 const fabricApiUrl = process.env.SIGNALWIRE_FABRIC_API_URL
 
+
+function getCallbackUrl(req) {
+  return `${req.protocol}://${req.get('host')}/callback`
+}
+
 async function apiRequest(uri, options) {
   const response = await fetch(uri, options)
 
@@ -44,12 +49,12 @@ async function apiRequest(uri, options) {
   return await response.json()
 }
 
-async function getAccessToken(code, verifier, currentHost) {
+async function getAccessToken(code, verifier, callbackUrl) {
   const params = new URLSearchParams()
   params.append('client_id', process.env.OAUTH_CLIENT_ID)
   params.append('grant_type', 'authorization_code')
   params.append('code', code)
-  params.append('redirect_uri', `${currentHost}/callback`)
+  params.append('redirect_uri', callbackUrl)
   params.append('code_verifier', verifier)
 
   return await apiRequest(process.env.OAUTH_TOKEN_URI, {
@@ -135,7 +140,7 @@ app.get('/oauth', (req, res) => {
   const queryParams = new URLSearchParams({
     response_type: 'code',
     client_id: process.env.OAUTH_CLIENT_ID,
-    redirect_uri: `${currentHost}/callback`,
+    redirect_uri: getCallbackUrl(req),
     code_challenge: challenge,
     code_challenge_method: 'S256',
   })
@@ -147,10 +152,10 @@ app.get('/oauth', (req, res) => {
 
 app.get('/callback', async (req, res) => {
   console.log('oauth: process callback')
-  const currentHost = `${req.protocol}://${req.get('host')}`
+  const callbackUrl = getCallbackUrl(req)
 
   try {
-    const tokenData = await getAccessToken(req.query.code, req.session.verifier, currentHost)
+    const tokenData = await getAccessToken(req.query.code, req.session.verifier, callbackUrl)
     const token = tokenData.access_token
     req.session.token = token
 
