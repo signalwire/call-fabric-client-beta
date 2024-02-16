@@ -35,7 +35,8 @@ const fabricApiUrl = process.env.SIGNALWIRE_FABRIC_API_URL
 
 
 function getCallbackUrl(req) {
-  return `${req.protocol}://${req.get('host')}/callback`
+  const protocol = req.get('x-forwarded-proto') || req.protocol
+  return `${protocol}://${req.get('host')}/callback`
 }
 
 async function apiRequest(uri, options) {
