@@ -37,6 +37,7 @@ const inCallElements = [
   unmuteVideoSelfBtn,
   deafSelfBtn,
   undeafSelfBtn,
+  controlConvo,
   controlSliders,
   controlLayout,
   hideVMutedBtn,
@@ -345,6 +346,7 @@ function restoreUI() {
   btnReject.classList.add('d-none')
   tabs.classList.remove('d-none')
   connectStatus.innerHTML = 'Not Connected'
+  liveMessageList.textContent = ''
 
   inCallElements.forEach((button) => {
     button.classList.add('d-none')
@@ -888,8 +890,7 @@ function isBlank(str) {
 }
 
 /** ======= Tab utilities start ======= */
-
-function toggleTabState(activeButtonName) {
+window.toggleTabState = async (activeButtonName) => {
   const config = [
     {
       name: 'Directory',
@@ -914,84 +915,94 @@ function toggleTabState(activeButtonName) {
       card.classList.add('d-none')
     }
   })
+
+  if (activeButtonName === 'History') {
+    await fetchHistories()
+  }
+
+  if (activeButtonName === 'Directory') {
+    await fetchAddresses()
+  }
 }
 
 /** ======= Tab utilities end ======= */
 
 /** ======= Address utilities start ======= */
+const createAddressListItem = (address) => {
+  const displayName = escapeHTML(address.display_name)
+  const type = escapeHTML(address.type)
+
+  const listItem = document.createElement('li')
+  listItem.className = 'list-group-item'
+  listItem.id = address.id
+
+  const container = document.createElement('div')
+  container.className = 'container p-0'
+  listItem.appendChild(container)
+
+  const row = document.createElement('div')
+  row.className = 'row'
+  container.appendChild(row)
+
+  const col1 = document.createElement('div')
+  col1.className = 'col-10'
+  row.appendChild(col1)
+
+  const badge = document.createElement('span')
+  badge.className = 'badge bg-primary me-2'
+  badge.textContent = type
+  col1.appendChild(badge)
+
+  const addressNameLink = document.createElement('button')
+  addressNameLink.textContent = displayName
+  addressNameLink.className = 'btn btn-link p-0'
+  addressNameLink.onclick = () => openMessageModal(address)
+  col1.appendChild(addressNameLink)
+
+  const col2 = document.createElement('div')
+  col2.className = 'col'
+  row.appendChild(col2)
+
+  Object.entries(address.channels).forEach(([channelName, channelValue]) => {
+    const button = document.createElement('button')
+    button.className = 'btn btn-sm btn-success'
+
+    button.addEventListener('click', () => dialAddress(channelValue))
+
+    const icon = document.createElement('i')
+    if (channelName === 'messaging') {
+      icon.className = 'bi bi-chat'
+    } else if (channelName === 'video') {
+      icon.className = 'bi bi-camera-video'
+    } else if (channelName === 'audio') {
+      icon.className = 'bi bi-phone'
+    }
+    button.appendChild(icon)
+
+    col2.appendChild(button)
+  })
+
+  const row2 = document.createElement('div')
+  const addressUrl = Object.values(address.channels)[0]
+  let strippedUrl = addressUrl.split('?')[0]
+  row2.textContent = strippedUrl
+  container.appendChild(row2)
+
+  return listItem
+}
+
 function updateAddressUI() {
   const addressDiv = document.getElementById('addresses')
   const { data: addresses } = window.__addressData
 
-  const createListItem = (address) => {
-    const displayName = escapeHTML(address.display_name)
-    const type = escapeHTML(address.type)
-
-    const listItem = document.createElement('li')
-    listItem.className = 'list-group-item'
-
-    const container = document.createElement('div')
-    container.className = 'container p-0'
-    listItem.appendChild(container)
-
-    const row = document.createElement('div')
-    row.className = 'row'
-    container.appendChild(row)
-
-    const col1 = document.createElement('div')
-    col1.className = 'col-10'
-    row.appendChild(col1)
-
-    const badge = document.createElement('span')
-    badge.className = 'badge bg-primary me-2'
-    badge.textContent = type
-    col1.appendChild(badge)
-
-    const addressNameLink = document.createElement('button')
-    addressNameLink.textContent = displayName
-    addressNameLink.className = 'btn btn-link p-0'
-    addressNameLink.onclick = () => openMessageModal(address)
-    col1.appendChild(addressNameLink)
-
-    const col2 = document.createElement('div')
-    col2.className = 'col'
-    row.appendChild(col2)
-
-    Object.entries(address.channels).forEach(([channelName, channelValue]) => {
-      const button = document.createElement('button')
-      button.className = 'btn btn-sm btn-success'
-
-      button.addEventListener('click', () => dialAddress(channelValue))
-
-      const icon = document.createElement('i')
-      if (channelName === 'messaging') {
-        icon.className = 'bi bi-chat'
-      } else if (channelName === 'video') {
-        icon.className = 'bi bi-camera-video'
-      } else if (channelName === 'audio') {
-        icon.className = 'bi bi-phone'
-      }
-      button.appendChild(icon)
-
-      col2.appendChild(button)
-    })
-
-    const row2 = document.createElement('div')
-    const addressUrl = Object.values(address.channels)[0]
-    let strippedUrl = addressUrl.split('?')[0]
-    row2.textContent = strippedUrl
-    container.appendChild(row2)
-
-    return listItem
-  }
-
   const addressUl = addressDiv.querySelector('ul')
   addressUl.innerHTML = ''
-  addresses.map(createListItem).forEach((item) => addressUl.appendChild(item))
+  addresses
+    .map(createAddressListItem)
+    .forEach((item) => addressUl.appendChild(item))
 }
 
 async function fetchAddresses() {
-  toggleTabState('Directory')
   if (!client) return
   try {
     const searchText = searchInput.value
@@ -1063,6 +1074,7 @@ function formatMessageDate(date) {
 function createConversationListItem(convo) {
   const item = document.createElement('li')
   item.classList.add('list-group-item')
+  item.id = convo.id
 
   const convoDiv = document.createElement('div')
   convoDiv.className = 'd-flex align-items-center'
@@ -1101,29 +1113,49 @@ function updateHistoryUI() {
 }
 
 async function fetchHistories() {
-  toggleTabState('History')
   if (!client) return
   try {
     const historyData = await client.conversation.getConversations()
     window.__historyData = historyData
     updateHistoryUI()
-    subscribeToNewConversation()
+    subscribeToNewMessages()
   } catch (error) {
     console.error('Unable to fetch histories', error)
   }
 }
 
 let isConvoSubscribed = false
-function subscribeToNewConversation() {
+function subscribeToNewMessages() {
   if (!isConvoSubscribed) {
-    client.conversation.subscribe((newConvo) => {
-      const historyDiv = document.getElementById('histories')
-      const historyUl = historyDiv.querySelector('ul')
-      const newListItem = createConversationListItem(newConvo)
-      if (historyUl.firstChild) {
-        historyUl.insertBefore(newListItem, historyUl.firstChild)
+    client.conversation.subscribe((newMsg) => {
+      console.log('New message received!', newMsg)
+
+      // Refetch both histories and directories to update the last message time (no await)
+      Promise.all([fetchHistories(), fetchAddresses()])
+
+      // If message modal is opened, update modal message list
+      const oldMessages = window.__messageData
+      if (
+        oldMessages &&
+        newMsg.conversation_id === oldMessages?.data?.[0]?.conversation_id
+      ) {
+        const messageList = msgModalDiv.querySelector('#messageList')
+        const newListItem = createMessageListItem(newMsg)
+        if (messageList.firstChild) {
+          messageList.insertBefore(newListItem, messageList.firstChild)
+        } else {
+          messageList.appendChild(newListItem)
+        }
+      }
+
+      // Update in call live messages
+      // FIXME: Make sure the message is for the current call based on newMsg.conversation_id
+      const liveMessageList = document.querySelector('#liveMessageList')
+      const newListItem = createMessageListItem(newMsg)
+      if (liveMessageList.firstChild) {
+        liveMessageList.insertBefore(newListItem, liveMessageList.firstChild)
       } else {
-        historyUl.appendChild(newListItem)
+        liveMessageList.appendChild(newListItem)
       }
     })
     isConvoSubscribed = true
@@ -1136,6 +1168,7 @@ function subscribeToNewConversation() {
 function createMessageListItem(msg) {
   const listItem = document.createElement('li')
   listItem.classList.add('list-group-item')
+  listItem.id = msg.id
   const formattedTimestamp = formatMessageDate(msg.ts * 1000)
   listItem.innerHTML = `
     <div class="d-flex flex-column">
@@ -1152,17 +1185,18 @@ function createMessageListItem(msg) {
   return listItem
 }
 
-const modalDiv = document.getElementById('messageModal')
+const msgModalDiv = document.getElementById('messageModal')
 
-modalDiv.addEventListener('hidden.bs.modal', clearModalContent)
+msgModalDiv.addEventListener('hidden.bs.modal', clearMessageModal)
 
-function clearModalContent() {
-  const titleH2 = modalDiv.querySelector('.title')
-  const typeBadgeSpan = modalDiv.querySelector('.type-badge')
-  const contactBtnDiv = modalDiv.querySelector('.contact-buttons')
-  const messageList = modalDiv.querySelector('#messageList')
-  const loaderListItem = modalDiv.querySelector('#messageList li')
-  const avatarImage = modalDiv.querySelector('.avatar')
+function clearMessageModal() {
+  window.__messageData = null
+  const titleH2 = msgModalDiv.querySelector('.title')
+  const typeBadgeSpan = msgModalDiv.querySelector('.type-badge')
+  const contactBtnDiv = msgModalDiv.querySelector('.contact-buttons')
+  const messageList = msgModalDiv.querySelector('#messageList')
+  const loaderListItem = msgModalDiv.querySelector('#messageList li')
+  const avatarImage = msgModalDiv.querySelector('.avatar')
   titleH2.textContent = ''
   typeBadgeSpan.textContent = ''
   contactBtnDiv.classList.add('d-none')
@@ -1181,20 +1215,20 @@ function clearModalContent() {
 }
 
 async function openMessageModal(data) {
-  const modal = new bootstrap.Modal(modalDiv)
+  const modal = new bootstrap.Modal(msgModalDiv)
   modal.show()
 
-  const titleH2 = modalDiv.querySelector('.title')
+  const titleH2 = msgModalDiv.querySelector('.title')
   titleH2.textContent = data.display_name || data.name || 'John Doe'
 
   if (data.type) {
-    const typeBadgeSpan = modalDiv.querySelector('.type-badge')
+    const typeBadgeSpan = msgModalDiv.querySelector('.type-badge')
     typeBadgeSpan.textContent = data.type
     typeBadgeSpan.classList.add('badge', 'bg-primary')
   }
 
   if (data.channels) {
-    const contactBtnDiv = modalDiv.querySelector('.contact-buttons')
+    const contactBtnDiv = msgModalDiv.querySelector('.contact-buttons')
     contactBtnDiv.classList.remove('d-none')
     if (data.channels.audio) {
       const audioBtn = contactBtnDiv.querySelector('.btn-dial-audio')
@@ -1226,8 +1260,10 @@ async function openMessageModal(data) {
   await fetchMessages(data.id)
 }
 
-function updateMessageUI(messages) {
-  const loaderListItem = document.querySelector('#messageList li')
+function updateMessageUI() {
+  const { data: messages } = window.__messageData
+  const messageList = msgModalDiv.querySelector('#messageList')
+  const loaderListItem = messageList.querySelector('li')
   loaderListItem.classList.add('d-none')
   if (!messages?.length) {
     const noMsglistItem = document.createElement('li')
@@ -1251,7 +1287,8 @@ async function fetchMessages(id) {
     const messages = await client.conversation.getConversationMessages({
       addressId: id,
     })
-    updateMessageUI(messages.data)
+    window.__messageData = messages
+    updateMessageUI()
   } catch (error) {
     console.error('Unable to fetch messages', error)
   }
