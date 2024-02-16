@@ -130,7 +130,7 @@ app.get('/oauth', (req, res) => {
   const challenge = base64url(
     crypto.createHash('sha256').update(verifier).digest()
   )
-  const currentHost = req.protocol + '://' + req.get('host');
+  const currentHost = `${req.protocol}://${req.get('host')}`
 
   const queryParams = new URLSearchParams({
     response_type: 'code',
@@ -147,7 +147,7 @@ app.get('/oauth', (req, res) => {
 
 app.get('/callback', async (req, res) => {
   console.log('oauth: process callback')
-  const currentHost = req.protocol + '://' + req.get('host');
+  const currentHost = `${req.protocol}://${req.get('host')}`
 
   try {
     const tokenData = await getAccessToken(req.query.code, req.session.verifier, currentHost)
