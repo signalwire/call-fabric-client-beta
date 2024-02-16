@@ -350,6 +350,8 @@ function restoreUI() {
     button.classList.add('d-none')
     button.disabled = true
   })
+  window.__membersData = {}
+  updateMembersUI()
 }
 
 async function getClient() {
@@ -462,6 +464,9 @@ window.connect = async () => {
     updateMembersUI()
   }
   )
+  roomObj.on('member.talking', (params) =>
+    console.debug('>> member.talking', params)
+  )
 
   roomObj.on('member.updated.audio_muted', (params) =>
     console.debug('>> member.updated.audio_muted', params)
@@ -477,9 +482,7 @@ window.connect = async () => {
     }
   })
 
-  roomObj.on('member.talking', (params) =>
-    console.debug('>> member.talking', params)
-  )
+
   roomObj.on('layout.changed', (params) =>
     console.debug('>> layout.changed', params)
   )
