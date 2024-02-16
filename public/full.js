@@ -643,6 +643,14 @@ window.unmuteVideoAll = () => {
   roomObj.videoUnmute({ memberId: 'all' })
 }
 
+window.muteVideoMember = (id) => {
+  roomObj.videoMute({ memberId: id })
+}
+
+window.unmuteVideoMember= () => {
+  roomObj.videoUnmute({ memberId: id })
+}
+
 window.muteVideoSelf = () => {
   roomObj.videoMute()
 }
@@ -1159,7 +1167,7 @@ function updateMembersUI() {
       className: 'btn btn-warning',
       textContent: 'mute video',
       href: '#',
-      onclick: () => console.log('### Nothing Executed ###'),
+      onclick: () => window.muteVideoMember(member.id),
       parent: actionsDiv
     })
     createChildElement({
@@ -1167,7 +1175,7 @@ function updateMembersUI() {
       className: 'btn btn-warning',
       textContent: 'unmute video',
       href: '#',
-      onclick: () => console.log('### Nothing Executed ###'),
+      onclick: () => window.unmuteVideoMember(member.id),
       parent: actionsDiv
     })
 
