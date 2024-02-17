@@ -409,7 +409,30 @@ window.connect = async () => {
   window.__call = call
   roomObj = call
 
-  // add all listeners before waiting for the call start 
+  
+
+  const startHandler = (params) => {
+    console.debug('>> call.start() resolved', params)
+
+    updateUIConnected()
+
+    // loadLayouts()
+  }
+
+  const startCall = async () => new Promise(async (res, rej) => {
+    await call.start()
+    console.debug('Call Obj', call)
+    startHandler()
+  });
+
+  const startPromise = startCall()
+  
+  // don't wait the start to add the event listeners
+  roomObj.on('room.joined', (params) => {
+    console.log('>> room.joined', params)
+    console.warn('Dont use room.joined as source of truth for the members list')
+  })
+
   roomObj.on('media.connected', () => {
     console.debug('>> media.connected')
   })
@@ -455,10 +478,10 @@ window.connect = async () => {
     updateMembersUI()
   })
   roomObj.on('member.updated', (params) => {
-    // console.debug('>> member.updated', params)
-    // window.__membersData = window.__membersData || {} 
-    // window.__membersData[params.id] = params
-    // updateMembersUI()
+    console.debug('>> member.updated', params)
+    window.__membersData = window.__membersData || {} 
+    window.__membersData[params.id] = params
+    updateMembersUI()
   }
   )
   roomObj.on('member.talking', (params) =>
@@ -478,7 +501,6 @@ window.connect = async () => {
       delete window.__membersData[params.member_id]
     }
   })
-
 
   roomObj.on('layout.changed', (params) =>
     console.debug('>> layout.changed', params)
@@ -502,21 +524,8 @@ window.connect = async () => {
       document.getElementById('playbackVolume').value = params.volume
     }
   })
-
-  // Only start a call after all listeners
-  await call.start()
-
-  console.debug('Call Obj', call)
-
-  const joinHandler = (params) => {
-    console.debug('>> room.joined', params)
-
-    updateUIConnected()
-
-    // loadLayouts()
-  }
-  joinHandler()
-
+  console.log('waiting callStart')
+  await startPromise
 }
 
 function updateUIRinging() {
@@ -1034,6 +1043,171 @@ const createAddressListItem = (address) => {
   container.appendChild(row2)
 
   return listItem
+}
+
+function updateMembersUI() {
+  const membersDiv = document.getElementById('members')
+  membersDiv.innerHTML = ''
+  const members = window.__membersData
+
+  const createMemberItem = (member) => {
+
+    const createChildElement = (options) => {
+      const el = document.createElement(options.tag)
+      
+      Object.entries(options).forEach(([key, value]) => {
+        if(['tag', 'parent'].includes(key)) return
+        el[key] = value
+      })
+
+      options.parent.appendChild(el);
+
+      return el;
+    }
+    
+    const listItem = document.createElement('li')
+    listItem.className = "list-group-item"
+
+    const memberDiv = document.createElement('div');
+    memberDiv.className = 'row p-0';
+    listItem.appendChild(memberDiv);
+    
+    createChildElement({
+      tag: 'div',
+      textContent: member.type,
+      className: 'badge bg-primary me-2',
+      parent: memberDiv
+    })
+
+    createChildElement({
+      tag: 'div',
+      textContent: member.id,
+      parent: memberDiv
+    })
+
+    createChildElement({
+      tag: 'div',
+      textContent: member.name,
+      parent: memberDiv
+    })
+
+    createChildElement({
+      tag: 'div',
+      textContent: `${member.currentPosition}=>${member.requestedPosition}`,
+      parent: memberDiv
+    })
+
+    createChildElement({
+      tag: 'div',
+      textContent:  member.meta ? Object.entries(member.meta).reduce((previous, [key, value])=> {
+        return `${previous},${key}:${value}`
+      }, '') : 'no meta',
+      parent: memberDiv
+    })
+
+    createChildElement({
+      tag: 'div',
+      textContent: `visible:${member.visible}`,
+      parent: memberDiv
+    })
+
+    createChildElement({
+      tag: 'div',
+      textContent: `audio muted:${member.audio_muted}`,
+      parent: memberDiv
+    })
+
+    createChildElement({
+      tag: 'div',
+      textContent: `video muted:${member.video_muted}`,
+      parent: memberDiv
+    })
+
+    createChildElement({
+      tag: 'div',
+      textContent: `deaf:${member.deaf}`,
+      parent: memberDiv
+    })
+
+    createChildElement({
+      tag: 'div',
+      textContent: `talking: ${member.talking}`,
+      parent: memberDiv
+    })
+
+    createChildElement({
+      tag: 'div',
+      textContent: `handraised: ${member.handraised}`,
+      parent: memberDiv
+    })
+
+    createChildElement({
+      tag: 'div',
+      textContent: `input volume: ${member.input_volume}`,
+      parent: memberDiv
+    })
+
+    createChildElement({
+      tag: 'div',
+      textContent: `input sensitivity: ${member.input_sensitivity}`,
+      parent: memberDiv
+    })
+
+    createChildElement({
+      tag: 'div',
+      textContent: `input volume: ${member.output_volume}`,
+      parent: memberDiv
+    })
+
+    const actionsDiv = createChildElement({
+      tag: 'div',
+      className: 'btn-group-vertical btn-group-sm',
+      parent: memberDiv
+    })
+
+    createChildElement({
+      tag: 'a',
+      className: 'btn btn-warning',
+      textContent: 'mute audio',
+      href: '#',
+      onclick: () => window.muteMember(member.id),
+      parent: actionsDiv
+    })
+    createChildElement({
+      tag: 'a',
+      className: 'btn btn-warning',
+      textContent: 'unmute audio',
+      href: '#',
+      onclick: () => window.unmuteMember(member.id),
+      parent: actionsDiv
+    })
+    createChildElement({
+      tag: 'a',
+      className: 'btn btn-warning',
+      textContent: 'mute video',
+      href: '#',
+      onclick: () => console.log('### Nothing Executed ###'),
+      parent: actionsDiv
+    })
+    createChildElement({
+      tag: 'a',
+      className: 'btn btn-warning',
+      textContent: 'unmute video',
+      href: '#',
+      onclick: () => console.log('### Nothing Executed ###'),
+      parent: actionsDiv
+    })
+
+    memberDiv.appendChild(actionsDiv)
+
+    return listItem
+
+  }
+
+  Object.values(members)
+    .map(createMemberItem)
+    .forEach((memberCard) => membersDiv.appendChild(memberCard))
+
 }
 
 function updateAddressUI() {
