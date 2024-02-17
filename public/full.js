@@ -96,6 +96,13 @@ async function enablePushNotifications() {
   })
 
   try {
+    navigator.serviceWorker.addEventListener('message', event => {
+      console.log(`The service worker sent me a message: ${event.data}`);
+      const body = JSON.parse(event.data.body || '{}')
+      handlePushNotification(body)
+      alert(body.title)
+    });
+
     const registration = await navigator.serviceWorker.register(
       '/service-worker.js',
       {
