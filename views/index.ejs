@@ -161,6 +161,21 @@
           </div>
         </div>
         <!-- Room controls end -->
+      
+        <!-- Conversation logs -->
+        <div id="controlConvo" class="row py-2 px-2">
+          <div class="card p-0">
+            <div class="card-header">
+              Conversation logs
+            </div>
+            <div class="card-body px-0 py-1">
+              <div class="overflow-auto" style="max-height: 200px; min-height: 100px;">
+                <ul id="liveMessageList" class="list-group list-group-flush mt-0"></ul>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Conversation logs end -->
       </div>
       <!-- Connect options end -->
 
@@ -170,10 +185,10 @@
         <div id="tabs">
           <ul class="nav nav-tabs">
             <li class="nav-item">
-              <button class="nav-link text-secondary" name="History" onclick="fetchHistories()">History</button>
+              <button class="nav-link text-secondary" name="History" onclick="toggleTabState('History')">History</button>
             </li>
             <li class="nav-item">
-              <button class="nav-link active" name="Directory" onclick="fetchAddresses()">Directory</button>
+              <button class="nav-link active" name="Directory" onclick="toggleTabState('Directory')">Directory</button>
             </li>
           </ul>
 
@@ -206,14 +221,14 @@
             <!-- Pagination -->
             <div class="d-flex justify-content-center pb-2 gap-2">
               <button 
-                name="fetch-next-address" 
+                name="fetch-prev-address" 
                 type="button" 
                 class="btn btn-light btn-sm" 
                 onclick="fetchPrevAddresses()">
                 Prev
               </button>
               <button 
-                name="fetch-prev-address" 
+                name="fetch-next-address" 
                 type="button" 
                 class="btn btn-light btn-sm" 
                 onclick="fetchNextAddresses()">
@@ -377,81 +392,39 @@
     <hr />
   </div>
 
-  <div class="modal fade" id="addressModal" tabindex="-1" aria-labelledby="addressModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+  <div class="modal fade" id="messageModal" tabindex="-1" aria-labelledby="messageModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-body">
-          <div class="container-fluid">
-
-            <div class="text-center address-info mt-3">
-              <div class="address-avatar-container">
-                <img src="https://i.pravatar.cc/125?u=mail@ashallendesign.co.uk" alt="Avatar" class="rounded-circle avatar address-avatar">
-              </div>
-              <div class="row mt-1">
-                <div class="col-auto">
-                  <span class="badge address-badge bg-primary me-2">
-                    type
-                  </span>
-                </div>
-                <div class="col-auto">
-                  <h2 class="address-display-name">
-                    First Last
-                  </h2>
-                </div>  
-              </div>
-              <div class="address-channels-buttons mt-3">
-                <button class="btn btn-secondary btn-address-dial-audio">
+          <div class="container-fluid p-0">
+            <div class="text-center">
+              <img src="https://i.pravatar.cc/125" alt="Avatar" class="rounded-circle avatar" style="min-height: 125px">
+              <h2 class="title mt-2"></h2>
+              <span class="type-badge"></span>
+              <div class="contact-buttons mt-3 d-none">
+                <button class="btn btn-secondary btn-dial-audio d-none">
                   <i class="bi bi-phone"></i>
                   Call
                 </button>
-                <button class="btn btn-secondary btn-address-dial-video">
+                <button class="btn btn-secondary btn-dial-video d-none">
                   <i class="bi bi-camera-video"></i>
                   Video
                 </button>
-                <button class="btn btn-secondary btn-address-dial-messaging">
+                <button class="btn btn-secondary btn-dial-messaging d-none">
                   <i class="bi bi-chat"></i>
                   Chat
                 </button>
               </div>
             </div>
-
-            <div class="mt-4">
-              <h3 class="text-center">Recents</h3>
-              <div class="address-recent-messages">
-                  <div class="address-recent-message shadow-sm p-2 mb-1 bg-body rounded">
-                    <p class="card-text placeholder-glow">
-                      <span class="placeholder placeholder-lg col-6"></span>
-                      <span class="placeholder placeholder-lg col-12"></span>
-                    </p>
-                  </div>
-                  <div class="address-recent-message shadow-sm p-2 mb-1 bg-body rounded">
-                    <p class="card-text placeholder-glow">
-                      <span class="placeholder placeholder-lg col-6"></span>
-                      <span class="placeholder placeholder-lg col-12"></span>
-                    </p>
-                  </div>
-                  <div class="address-recent-message shadow-sm p-2 mb-1 bg-body rounded">
-                    <p class="card-text placeholder-glow">
-                      <span class="placeholder placeholder-lg col-6"></span>
-                      <span class="placeholder placeholder-lg col-12"></span>
-                    </p>
-                  </div>
-                  <div class="address-recent-message shadow-sm p-2 mb-1 bg-body rounded">
-                    <p class="card-text placeholder-glow">
-                      <span class="placeholder placeholder-lg col-6"></span>
-                      <span class="placeholder placeholder-lg col-12"></span>
-                    </p>
-                  </div>
-                  <div class="address-recent-message shadow-sm p-2 mb-1 bg-body rounded">
-                    <p class="card-text placeholder-glow">
-                      <span class="placeholder placeholder-lg col-6"></span>
-                      <span class="placeholder placeholder-lg col-12"></span>
-                    </p>
-                  </div>
-                </div>                
-              </div>
-            </div>
-
+            <!-- Messages will be loaded here -->
+            <ul id="messageList" class="list-group list-group-flush mt-4">
+              <li class="list-group-item">
+                <span class="placeholder placeholder-lg col-6"></span>
+                <span class="placeholder placeholder-lg col-12"></span>
+                <span class="placeholder placeholder-lg col-6 mt-4"></span>
+                <span class="placeholder placeholder-lg col-12"></span>
+              </li>
+            </ul>
           </div>
         </div>
       </div>
