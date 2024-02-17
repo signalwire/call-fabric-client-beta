@@ -98,8 +98,9 @@ async function enablePushNotifications() {
   try {
     navigator.serviceWorker.addEventListener('message', event => {
       console.log(`The service worker sent me a message: ${event.data}`);
-      const body = JSON.parse(event.data.body || '{}')
-      handlePushNotification(body)
+      const message = JSON.parse(event.data || '{}')
+      // FIXME I think with a real payload the body needs to be parsed
+      handlePushNotification(message.notification.body)
       alert(body.title)
     });
 
