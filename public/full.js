@@ -96,6 +96,13 @@ async function enablePushNotifications() {
   })
 
   try {
+    navigator.serviceWorker.addEventListener('message', event => {
+      console.log(`The service worker sent me a message: ${event.data}`);
+      const body = JSON.parse(event.data.body || '{}')
+      handlePushNotification(body)
+      alert(body.title)
+    });
+
     const registration = await navigator.serviceWorker.register(
       '/service-worker.js',
       {
@@ -113,6 +120,7 @@ async function enablePushNotifications() {
       await new Promise((resolve) => {
         serviceWorker.addEventListener('statechange', ({ target }) => {
           if (target.state === 'activated') {
+            
             resolve()
           }
         })
@@ -400,19 +408,7 @@ window.connect = async () => {
   window.__call = call
   roomObj = call
 
-  await call.start()
-
-  console.debug('Call Obj', call)
-
-  const joinHandler = (params) => {
-    console.debug('>> room.joined', params)
-
-    updateUIConnected()
-
-    // loadLayouts()
-  }
-  joinHandler()
-
+  // add all listeners before waiting for the call start 
   roomObj.on('media.connected', () => {
     console.debug('>> media.connected')
   })
@@ -458,10 +454,10 @@ window.connect = async () => {
     updateMembersUI()
   })
   roomObj.on('member.updated', (params) => {
-    console.debug('>> member.updated', params)
-    window.__membersData = window.__membersData || {} 
-    window.__membersData[params.id] = params
-    updateMembersUI()
+    // console.debug('>> member.updated', params)
+    // window.__membersData = window.__membersData || {} 
+    // window.__membersData[params.id] = params
+    // updateMembersUI()
   }
   )
   roomObj.on('member.talking', (params) =>
@@ -505,6 +501,21 @@ window.connect = async () => {
       document.getElementById('playbackVolume').value = params.volume
     }
   })
+
+  // Only start a call after all listeners
+  await call.start()
+
+  console.debug('Call Obj', call)
+
+  const joinHandler = (params) => {
+    console.debug('>> room.joined', params)
+
+    updateUIConnected()
+
+    // loadLayouts()
+  }
+  joinHandler()
+
 }
 
 function updateUIRinging() {

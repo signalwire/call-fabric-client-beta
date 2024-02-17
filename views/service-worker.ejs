@@ -31,6 +31,13 @@ try {
 
     console.log('Notification', payload.notification)
 
+    self.clients.matchAll().then(function(clients) {
+      clients.forEach(function(client) {
+        console.log(client);
+        client.postMessage(payload.notification);
+      });
+    });
+
     self.registration.showNotification(notificationTitle, notificationOptions)
   })
 } catch (error) {
