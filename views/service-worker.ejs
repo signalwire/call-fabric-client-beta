@@ -24,7 +24,7 @@ try {
       message
     )
 
-    const payload = JSON.parse(message.data.default);
+    const payload = JSON.parse(message.data.message);
 
     // Customize notification here
     const notificationTitle = payload.notification.body?.title
@@ -37,7 +37,7 @@ try {
     self.clients.matchAll().then(function(clients) {
       clients.forEach(function(client) {
         console.log(client);
-        client.postMessage(JSON.stringify(payload));
+        client.postMessage(message.data.message);
       });
     });
 

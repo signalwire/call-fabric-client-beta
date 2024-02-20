@@ -89,9 +89,9 @@ async function enablePushNotifications() {
   const messaging = FB.getMessaging(app)
 
   FB.onMessage(messaging, (payload) => {
-    console.log('Push payload', payload)
-    const body = JSON.parse(payload.notification.body || '{}')
-    handlePushNotification(body)
+    console.log('Push payload.data.message', payload.data.message)
+    const message = JSON.parse(payload.data.message);
+    handlePushNotification(message.notification.body)
     alert(body.title)
   })
 
@@ -99,7 +99,6 @@ async function enablePushNotifications() {
     navigator.serviceWorker.addEventListener('message', event => {
       console.log(`The service worker sent me a message: ${event.data}`);
       const message = JSON.parse(event.data || '{}')
-      // FIXME I think with a real payload the body needs to be parsed
       handlePushNotification(message.notification.body)
       alert(body.title)
     });
