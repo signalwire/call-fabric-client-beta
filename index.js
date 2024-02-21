@@ -5,6 +5,8 @@ const app = express()
 const base64url = require('base64url')
 const crypto = require('crypto')
 
+const PORT = process.env.PORT || 3000
+
 app.set('view engine', 'ejs')
 app.use(express.urlencoded({ extended: true }))
 app.use(express.json())
@@ -31,6 +33,12 @@ const FIREBASE_CONFIG = JSON.stringify({
 const host = process.env.RELAY_HOST
 const fabricApiUrl = process.env.SIGNALWIRE_FABRIC_API_URL
 
+
+function getCallbackUrl(req) {
+  const protocol = req.get('x-forwarded-proto') || req.protocol
+  return `${protocol}://${req.get('host')}/callback`
+}
+
 async function apiRequest(uri, options) {
   const response = await fetch(uri, options)
 
@@ -42,12 +50,12 @@ async function apiRequest(uri, options) {
   return await response.json()
 }
 
-async function getAccessToken(code, verifier) {
+async function getAccessToken(code, verifier, callbackUrl) {
   const params = new URLSearchParams()
   params.append('client_id', process.env.OAUTH_CLIENT_ID)
   params.append('grant_type', 'authorization_code')
   params.append('code', code)
-  params.append('redirect_uri', process.env.OAUTH_REDIRECT_URI)
+  params.append('redirect_uri', callbackUrl)
   params.append('code_verifier', verifier)
 
   return await apiRequest(process.env.OAUTH_TOKEN_URI, {
@@ -129,11 +137,12 @@ app.get('/oauth', (req, res) => {
   const challenge = base64url(
     crypto.createHash('sha256').update(verifier).digest()
   )
+  const currentHost = `${req.protocol}://${req.get('host')}`
 
   const queryParams = new URLSearchParams({
     response_type: 'code',
     client_id: process.env.OAUTH_CLIENT_ID,
-    redirect_uri: process.env.OAUTH_REDIRECT_URI,
+    redirect_uri: getCallbackUrl(req),
     code_challenge: challenge,
     code_challenge_method: 'S256',
   })
@@ -145,9 +154,10 @@ app.get('/oauth', (req, res) => {
 
 app.get('/callback', async (req, res) => {
   console.log('oauth: process callback')
+  const callbackUrl = getCallbackUrl(req)
 
   try {
-    const tokenData = await getAccessToken(req.query.code, req.session.verifier)
+    const tokenData = await getAccessToken(req.query.code, req.session.verifier, callbackUrl)
     const token = tokenData.access_token
     req.session.token = token
 
@@ -167,7 +177,7 @@ app.get('/subscriber', (req, res) => {
 app.post('/subscriber', async (req, res) => {
   console.log('process subscriber')
 
-  const { reference, password } = req.body;
+  const { reference, password } = req.body
 
   try {
     const tokenData = await getSubscriberToken(reference, password)
@@ -179,7 +189,9 @@ app.post('/subscriber', async (req, res) => {
     res.redirect('/')
   } catch (error) {
     console.error(error)
-    res.status(500).send('<h1>An error occurred</h1><p>' + error.message + '</p>')
+    res
+      .status(500)
+      .send('<h1>An error occurred</h1><p>' + error.message + '</p>')
   }
 })
 
@@ -193,6 +205,6 @@ app.get('/service-worker.js', async (req, res) => {
   })
 })
 
-app.listen(process.env.PORT || 3000, () => {
-  console.log('Server running on port 3000')
+app.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`)
 })
