@@ -573,6 +573,10 @@ window.ready = (callback) => {
   steerEl.value =
     localStorage.getItem('fabric.ws.steeringId') || ''
   steerEl.onblur = (ev) => localStorage.setItem('fabric.ws.steeringId', ev.target.value)
+  const destinationEl = document.getElementById('destination')
+  destinationEl.value =
+    localStorage.getItem('fabric.ws.destination') || ''
+    destinationEl.onblur = (ev) => localStorage.setItem('fabric.ws.destination', ev.target.value)
 }
 
 let screenShareObj
