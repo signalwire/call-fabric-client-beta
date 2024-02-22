@@ -912,12 +912,12 @@ function isBlank(str) {
 window.toggleTabState = async (activeButtonName) => {
   const config = [
     {
-      name: 'Directory',
+      name: 'directory',
       button: document.querySelector('button[name="Directory"]'),
       card: document.getElementById('addressCard'),
     },
     {
-      name: 'History',
+      name: 'history',
       button: document.querySelector('button[name="History"]'),
       card: document.getElementById('historyCard'),
     },
@@ -935,12 +935,59 @@ window.toggleTabState = async (activeButtonName) => {
     }
   })
 
-  if (activeButtonName === 'History') {
+  if (activeButtonName === 'history') {
     await fetchHistories()
   }
 
-  if (activeButtonName === 'Directory') {
+  if (activeButtonName === 'directory') {
     await fetchAddresses()
+  }
+}
+
+function updatePaginationUI(activeButtonName) {
+  const config = [
+    {
+      name: 'address',
+      paginationDiv: document.getElementById('addressPagination'),
+      data: window.__addressData,
+      fetchNext: fetchNextAddresses,
+      fetcthPrev: fetchPrevAddresses,
+    },
+    {
+      name: 'history',
+      paginationDiv: document.getElementById('historyPagination'),
+      data: window.__historyData,
+      fetchNext: fetchNextHistories,
+      fetcthPrev: fetchPrevHistories,
+    },
+    {
+      name: 'message',
+      paginationDiv: document.getElementById('messagePagination'),
+      data: window.__messageData,
+      fetchNext: fetchNextMessages,
+      fetcthPrev: fetchPrevMessages,
+    },
+  ]
+
+  const currentConf = config.find((conf) => conf.name === activeButtonName)
+  if (!currentConf?.data) return
+
+  currentConf.paginationDiv.classList.remove('d-none')
+  const nextBtn = currentConf.paginationDiv.querySelector(
+    'button[name="fetch-next"]'
+  )
+  const prevBtn = currentConf.paginationDiv.querySelector(
+    'button[name="fetch-prev"]'
+  )
+
+  if (nextBtn) {
+    nextBtn.onclick = currentConf.fetchNext
+    nextBtn.disabled = !currentConf.data.hasNext
+  }
+
+  if (prevBtn) {
+    prevBtn.onclick = currentConf.fetchNext
+    prevBtn.disabled = !currentConf.data.hasPrev
   }
 }
 
@@ -1019,6 +1066,8 @@ function updateAddressUI() {
   addresses
     .map(createAddressListItem)
     .forEach((item) => addressUl.appendChild(item))
+
+  updatePaginationUI('address')
 }
 
 async function fetchAddresses() {
@@ -1038,15 +1087,16 @@ async function fetchAddresses() {
   }
 }
 
-window.dialAddress = async (address) => {
+async function dialAddress(address) {
   const destinationInput = document.getElementById('destination')
   destinationInput.value = address
   connect()
 }
 
-window.fetchNextAddresses = async () => {
-  const { nextPage } = window.__addressData
+async function fetchNextAddresses() {
+  const { hasNext, nextPage } = window.__addressData
   try {
+    if (!hasNext) return
     const nextAddresses = await nextPage()
     window.__addressData = nextAddresses
     updateAddressUI()
@@ -1055,9 +1105,10 @@ window.fetchNextAddresses = async () => {
   }
 }
 
-window.fetchPrevAddresses = async () => {
-  const { prevPage } = window.__addressData
+async function fetchPrevAddresses() {
+  const { hasPrev, prevPage } = window.__addressData
   try {
+    if (!hasPrev) return
     const prevAddresses = await prevPage()
     window.__addressData = prevAddresses
     updateAddressUI()
@@ -1129,6 +1180,8 @@ function updateHistoryUI() {
   histories
     .map(createConversationListItem)
     .forEach((item) => historyUl.appendChild(item))
+
+  updatePaginationUI('history')
 }
 
 async function fetchHistories() {
@@ -1204,6 +1257,30 @@ function subscribeToNewMessages() {
   }
 }
 
+async function fetchNextHistories() {
+  const { hasNext, nextPage } = window.__historyData
+  try {
+    if (!hasNext) return
+    const nextHistory = await nextPage()
+    window.__historyData = nextHistory
+    updateAddressUI()
+  } catch (error) {
+    console.error('Unable to fetch next histories', error)
+  }
+}
+
+async function fetchPrevHistories() {
+  const { hasPrev, prevPage } = window.__historyData
+  try {
+    if (!hasPrev) return
+    const prevHistory = await prevPage()
+    window.__historyData = prevHistory
+    updateAddressUI()
+  } catch (error) {
+    console.error('Unable to fetch prev histories', error)
+  }
+}
+
 /** ======= History utilities end ======= */
 
 /** ======= Message utilities start ======= */
@@ -1237,11 +1314,13 @@ function clearMessageModal() {
   const typeBadgeSpan = msgModalDiv.querySelector('.type-badge')
   const contactBtnDiv = msgModalDiv.querySelector('.contact-buttons')
   const messageList = msgModalDiv.querySelector('#messageList')
+  const messagePagination = msgModalDiv.querySelector('#messagePagination')
   const loaderListItem = msgModalDiv.querySelector('#messageList li')
   const avatarImage = msgModalDiv.querySelector('.avatar')
   titleH2.textContent = ''
   typeBadgeSpan.textContent = ''
   contactBtnDiv.classList.add('d-none')
+  messagePagination.classList.add('d-none')
   // Remove all the message list item except the first one (loader)
   Array.from(messageList.children)
     .slice(1)
@@ -1321,6 +1400,8 @@ function updateMessageUI() {
   messages
     .map(createMessageListItem)
     .forEach((li) => messageList.appendChild(li))
+
+  updatePaginationUI('message')
 }
 
 async function fetchMessages(id) {
@@ -1333,6 +1414,30 @@ async function fetchMessages(id) {
     updateMessageUI()
   } catch (error) {
     console.error('Unable to fetch messages', error)
+  }
+}
+
+async function fetchNextMessages() {
+  const { hasNext, nextPage } = window.__messageData
+  try {
+    if (!hasNext) return
+    const nextMessage = await nextPage()
+    window.__messageData = nextMessage
+    updateMessageUI()
+  } catch (error) {
+    console.error('Unable to fetch next message', error)
+  }
+}
+
+async function fetchPrevMessages() {
+  const { hasPrev, prevPage } = window.__messageData
+  try {
+    if (!hasPrev) return
+    const prevMessage = await prevPage()
+    window.__messageData = prevMessage
+    updateMessageUI()
+  } catch (error) {
+    console.error('Unable to fetch prev message', error)
   }
 }
 

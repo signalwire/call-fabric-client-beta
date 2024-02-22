@@ -185,10 +185,10 @@
         <div id="tabs">
           <ul class="nav nav-tabs">
             <li class="nav-item">
-              <button class="nav-link text-secondary" name="History" onclick="toggleTabState('History')">History</button>
+              <button class="nav-link text-secondary" name="History" onclick="toggleTabState('history')">History</button>
             </li>
             <li class="nav-item">
-              <button class="nav-link active" name="Directory" onclick="toggleTabState('Directory')">Directory</button>
+              <button class="nav-link active" name="Directory" onclick="toggleTabState('address')">Directory</button>
             </li>
           </ul>
 
@@ -218,24 +218,26 @@
               <ul class="list-group list-group-flush"></ul>
             </div>
             
-            <!-- Pagination -->
-            <div class="d-flex justify-content-center pb-2 gap-2">
+            <!-- Address Pagination -->
+            <div id="addressPagination" class="d-flex justify-content-center pb-2 gap-2 d-none">
               <button 
-                name="fetch-prev-address" 
+                name="fetch-prev" 
                 type="button" 
                 class="btn btn-light btn-sm" 
-                onclick="fetchPrevAddresses()">
+                disabled
+              >
                 Prev
               </button>
               <button 
-                name="fetch-next-address" 
+                name="fetch-next" 
                 type="button" 
                 class="btn btn-light btn-sm" 
-                onclick="fetchNextAddresses()">
+                disabled
+              >
                 Next
               </button>
             </div>
-            <!-- Pagination end -->
+            <!-- Address Pagination end -->
           </div>
           <!-- Addresses end -->
 
@@ -244,6 +246,27 @@
             <div class="card-body" id="histories">
               <ul class="list-group list-group-flush"></ul>
             </div>
+
+            <!-- History Pagination -->
+            <div id="historyPagination" class="d-flex justify-content-center pb-2 gap-2 d-none">
+              <button 
+                name="fetch-prev" 
+                type="button" 
+                class="btn btn-light btn-sm" 
+                disabled  
+              >
+                Prev
+              </button>
+              <button 
+                name="fetch-next" 
+                type="button" 
+                class="btn btn-light btn-sm" 
+                disabled  
+              >
+                Next
+              </button>
+            </div>
+            <!-- History Pagination end -->
           </div>
           <!-- History end -->
         </div>
@@ -417,6 +440,27 @@
                 <span class="placeholder placeholder-lg col-12"></span>
               </li>
             </ul>
+
+            <!-- Message Pagination -->
+            <div id="messagePagination" class="d-flex justify-content-center pb-2 gap-2 d-none">
+              <button 
+                name="fetch-prev" 
+                type="button" 
+                class="btn btn-light btn-sm" 
+                disabled  
+              >
+                Prev
+              </button>
+              <button 
+                name="fetch-next" 
+                type="button" 
+                class="btn btn-light btn-sm" 
+                disabled  
+              >
+                Next
+              </button>
+            </div>
+            <!-- Message Pagination end -->
           </div>
         </div>
       </div>
