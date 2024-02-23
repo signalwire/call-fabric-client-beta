@@ -54,14 +54,26 @@
             <h5>Connect</h5>
             <div class="form-group">
               <label for="steeringId">Steering ID</label>
-              <input type="text" class="form-control" id="steeringId" placeholder="optional freeswitch nodeid" />
+              <input 
+                type="text"
+                class="form-control"
+                id="steeringId"
+                placeholder="optional freeswitch nodeid"
+                onchange="saveInLocalStorage(event)"
+              />
             </div>
             <div class="form-group">
               <label for="destination">Address</label>
-              <input type="text" class="form-control" id="destination" placeholder="<%= destination %>"
-                value="<%= destination %>" />
+              <input 
+                type="text"
+                class="form-control"
+                id="destination"
+                placeholder="<%= destination %>""
+                value="<%= destination %>"
+                onchange="saveInLocalStorage(event)"
+              />
             </div>
-            <div class="d-grid gap-2">
+            <div class="d-grid gap-2 mt-2">
               <button id="btnConnect" class="btn btn-success" onclick="connect()">
                 Connect
               </button>
