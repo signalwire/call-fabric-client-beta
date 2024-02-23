@@ -18,11 +18,14 @@ try {
   const firebaseApp = firebase.initializeApp(config)
 
   // Retrieve an instance of Firebase Messaging so that it can handle background messages.
-  firebase.messaging().onBackgroundMessage((payload) => {
+  firebase.messaging().onBackgroundMessage((message) => {
     console.log(
       '[service-worker.js] Received background message ',
-      payload
+      message
     )
+
+    const payload = JSON.parse(message.data.message);
+
     // Customize notification here
     const notificationTitle = payload.notification.body?.title
     const notificationOptions = {
@@ -30,6 +33,13 @@ try {
     }
 
     console.log('Notification', payload.notification)
+
+    self.clients.matchAll().then(function(clients) {
+      clients.forEach(function(client) {
+        console.log(client);
+        client.postMessage(message.data.message);
+      });
+    });
 
     self.registration.showNotification(notificationTitle, notificationOptions)
   })
