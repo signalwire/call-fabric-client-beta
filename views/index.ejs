@@ -200,12 +200,12 @@
               <button class="nav-link text-secondary" name="History" onclick="toggleTabState('history')">History</button>
             </li>
             <li class="nav-item">
-              <button class="nav-link active" name="Directory" onclick="toggleTabState('address')">Directory</button>
+              <button class="nav-link active" name="Directory" onclick="toggleTabState('directory')">Directory</button>
             </li>
           </ul>
 
           <!-- Addresses -->
-          <div class="card border-top-0 rounded-top-0" id="addressCard">
+          <div id="addressCard" class="card border-top-0 rounded-top-0" style="min-height: 300px">
             <!-- Filters -->
             <div class="input-group mt-1 px-2">
               <input
@@ -254,7 +254,7 @@
           <!-- Addresses end -->
 
           <!-- History -->
-          <div class="card border-top-0 rounded-top-0 d-none" id="historyCard">
+          <div id="historyCard" class="card border-top-0 rounded-top-0 d-none" style="min-height: 300px">
             <div class="card-body" id="histories">
               <ul class="list-group list-group-flush"></ul>
             </div>
