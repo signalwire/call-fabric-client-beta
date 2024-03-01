@@ -990,7 +990,7 @@ function updatePaginationUI(activeButtonName) {
   }
 
   if (prevBtn) {
-    prevBtn.onclick = currentConf.fetchNext
+    prevBtn.onclick = currentConf.fetcthPrev
     prevBtn.disabled = !currentConf.data.hasPrev
   }
 }
@@ -1248,7 +1248,6 @@ function subscribeToNewMessages() {
       }
 
       // Update in call live messages
-      // FIXME: Make sure the message is for the current call based on newMsg.conversation_id
       const liveMessageList = document.querySelector('#liveMessageList')
       const newListItem = createLiveMessageListItem(newMsg)
       if (liveMessageList.firstChild) {
