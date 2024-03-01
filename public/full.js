@@ -1062,9 +1062,10 @@ const createAddressListItem = (address) => {
 }
 
 function updateAddressUI() {
-  const addressDiv = document.getElementById('addresses')
-  const { data: addresses } = window.__addressData
+  const { data: addresses } = window.__addressData || {}
+  if (!addresses) return
 
+  const addressDiv = document.getElementById('addresses')
   const addressUl = addressDiv.querySelector('ul')
   addressUl.innerHTML = ''
   addresses
@@ -1085,9 +1086,10 @@ async function fetchAddresses() {
       displayName: !searchText.length ? undefined : searchText,
     })
     window.__addressData = addressData
-    updateAddressUI()
   } catch (error) {
     console.error('Unable to fetch addresses', error)
+  } finally {
+    updateAddressUI()
   }
 }
 
@@ -1176,9 +1178,10 @@ function createConversationListItem(convo) {
 }
 
 function updateHistoryUI() {
-  const historyDiv = document.getElementById('histories')
-  const { data: histories } = window.__historyData
+  const { data: histories } = window.__historyData || {}
+  if (!histories) return
 
+  const historyDiv = document.getElementById('histories')
   const historyUl = historyDiv.querySelector('ul')
   historyUl.innerHTML = ''
   histories
@@ -1193,10 +1196,11 @@ async function fetchHistories() {
   try {
     const historyData = await client.conversation.getConversations()
     window.__historyData = historyData
-    updateHistoryUI()
     subscribeToNewMessages()
   } catch (error) {
     console.error('Unable to fetch histories', error)
+  } finally {
+    updateHistoryUI()
   }
 }
 
