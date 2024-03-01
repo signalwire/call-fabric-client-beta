@@ -1084,6 +1084,7 @@ async function fetchAddresses() {
     const addressData = await client.address.getAddresses({
       type: selectedType === 'all' ? undefined : selectedType,
       displayName: !searchText.length ? undefined : searchText,
+      pageSize: 10,
     })
     window.__addressData = addressData
   } catch (error) {
