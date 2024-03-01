@@ -573,10 +573,14 @@ window.ready = (callback) => {
       }
     })
   }
-  const steerEl = document.getElementById('steeringId')
-  steerEl.value = localStorage.getItem('fabric.ws.steeringId') || ''
-  steerEl.onblur = (ev) =>
-    localStorage.setItem('fabric.ws.steeringId', ev.target.value)
+  const localSteeringId = document.getElementById('steeringId')
+  localSteeringId.value = localStorage.getItem('fabric.ws.steeringId') || ''
+
+  // Destination is populated through ENV by default
+  const localDestination = localStorage.getItem('fabric.ws.destination')
+  if (localDestination) {
+    document.getElementById('destination').value = localDestination
+  }
 }
 
 let screenShareObj
