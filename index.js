@@ -99,13 +99,16 @@ async function getSubscriberToken(reference, password) {
 
 app.get('/', async (req, res) => {
   let token
+  let user
   if (req.session && req.session.token) {
     token = req.session.token
+    user = req.session.user
   }
 
   res.render('index', {
     host,
     token: token,
+    user: user,
     fabricApiUrl: fabricApiUrl,
     destination: process.env.DEFAULT_DESTINATION,
     firebaseConfig: FIREBASE_CONFIG,
