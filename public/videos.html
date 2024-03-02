@@ -10,24 +10,24 @@
 
 <body>
     <div class="container">
-    <div id="landscappe" style="width: 100%; height: 100%; background-color: aqua;">
+    <!-- <div id="landscappe" style="width: 100%; height: 100%; background-color: aqua;">
         <div class="mcuContent"
             style="position: relative; width: 100%; height: 100%; margin: 0px auto; display: flex; align-items: center; justify-content: center;">
             <div class="paddingWrapper" style="padding-bottom: 56.25%; position: relative; width: 100%">
                 <div style="position: absolute; inset: 0px;">
-                    <video controls style="width: 100%; max-height: 100%;">
+                    <video id="vl" style="width: 100%; max-height: 100%;">
                         <source src="landscappe.mp4" type="video/mp4">
                     </video></div>
                 <div class="mcuLayers" style="display: block;"></div>
             </div>
         </div>
-    </div>
+    </div> -->
     <div id="portrait" style="width: 100%; height: 100%; background-color: aqua;">
         <div class="mcuContent"
             style="position: relative; width: 100%; height: 100%; margin: 0px auto; display: flex; align-items: center; justify-content: center;">
             <div class="paddingWrapper" style="padding-bottom: 56.25%; position: relative; width: 100%">
                 <div style="position: absolute; inset: 0px;">
-                    <video controls style="width: 100%; max-height: 100%;">
+                    <video id="vp" controls style="width: 100%; max-height: 100%;">
                         <source src="portrait.mp4" type="video/mp4">
                     </video></div>
                 <div class="mcuLayers" style="display: block;"></div>
@@ -36,5 +36,19 @@
     </div>
     </div>
 </body>
+<script>
+const vp = document.getElementById('vp');
+vp.addEventListener('loadedmetadata', () => {
+    console.log(`### Portrait video videoWidth: ${vp.videoWidth}px,  videoHeight: ${vp.videoHeight}px`);
+});
+const vl = document.getElementById('vl');
+vl.addEventListener('loadedmetadata', () => {
+    console.log(`### Landscape video videoWidth: ${vl.videoWidth}px,  videoHeight: ${vl.videoHeight}px`);
+});
+setInterval(() => {
+    console.log(`### Portrait video videoWidth: ${vp.videoWidth}px,  videoHeight: ${vp.videoHeight}px`);
+    console.log(`### Landscape video videoWidth: ${vl.videoWidth}px,  videoHeight: ${vl.videoHeight}px`);
+}, 1000);
+</script>
 
 </html>
