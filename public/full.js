@@ -351,6 +351,7 @@ function restoreUI() {
   btnAnswer.classList.add('d-none')
   btnReject.classList.add('d-none')
   tabs.classList.remove('d-none')
+  callConsole.classList.remove('ringing')
   connectStatus.innerHTML = 'Not Connected'
 
   inCallElements.forEach((button) => {
@@ -509,6 +510,7 @@ function updateUIRinging() {
   btnConnect.classList.add('d-none')
   btnAnswer.classList.remove('d-none')
   btnReject.classList.remove('d-none')
+  callConsole.classList.add('ringing')
   connectStatus.innerHTML = 'Ringing'
 
   inCallElements.forEach((button) => {
@@ -523,6 +525,7 @@ function updateUIConnected() {
   btnReject.classList.add('d-none')
   tabs.classList.add('d-none')
   btnDisconnect.classList.remove('d-none')
+  callConsole.classList.remove('ringing')
   connectStatus.innerHTML = 'Connected'
 
   inCallElements.forEach((button) => {
