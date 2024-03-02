@@ -49,6 +49,25 @@
     <div class="row py-3">
       <!-- Connect options -->
       <div class="col-12 col-md-4">
+        <% if (user) { %>
+          <div class="card">
+            <div class="card-header">User Info</div>
+            <div class="card-body">
+              <ul class="list-group list-group-flush">
+                <li class="list-group-item">email: <%= user.email %></li>
+                <li class="list-group-item">First Name: <%= user.first_name %></li>
+                <li class="list-group-item">Last Name: <%= user.last_name %></li>
+                <li class="list-group-item">Display Name: <%= user.display_name %></li>
+                <li class="list-group-item">Job Title: <%= user.job_title %></li>
+                <li class="list-group-item">Time Zone: <%= user.time_zone %></li>
+                <li class="list-group-item">Ccountry: <%= user.country %></li>
+                <li class="list-group-item">Region: <%= user.region %></li>
+                <li class="list-group-item">Company Name: <%= user.company_name %></li>
+              </ul>
+            </div>
+          </div>
+        <% } %>
+
         <div id="callConsole" class="card">
           <div class="card-body">
             <h5>Connect</h5>
