@@ -351,6 +351,7 @@ function restoreUI() {
   btnAnswer.classList.add('d-none')
   btnReject.classList.add('d-none')
   tabs.classList.remove('d-none')
+  callConsole.classList.remove('ringing')
   connectStatus.innerHTML = 'Not Connected'
 
   inCallElements.forEach((button) => {
@@ -509,6 +510,7 @@ function updateUIRinging() {
   btnConnect.classList.add('d-none')
   btnAnswer.classList.remove('d-none')
   btnReject.classList.remove('d-none')
+  callConsole.classList.add('ringing')
   connectStatus.innerHTML = 'Ringing'
 
   inCallElements.forEach((button) => {
@@ -523,6 +525,7 @@ function updateUIConnected() {
   btnReject.classList.add('d-none')
   tabs.classList.add('d-none')
   btnDisconnect.classList.remove('d-none')
+  callConsole.classList.remove('ringing')
   connectStatus.innerHTML = 'Connected'
 
   inCallElements.forEach((button) => {
@@ -990,7 +993,7 @@ function updatePaginationUI(activeButtonName) {
   }
 
   if (prevBtn) {
-    prevBtn.onclick = currentConf.fetchNext
+    prevBtn.onclick = currentConf.fetcthPrev
     prevBtn.disabled = !currentConf.data.hasPrev
   }
 }
@@ -1062,9 +1065,10 @@ const createAddressListItem = (address) => {
 }
 
 function updateAddressUI() {
-  const addressDiv = document.getElementById('addresses')
-  const { data: addresses } = window.__addressData
+  const { data: addresses } = window.__addressData || {}
+  if (!addresses) return
 
+  const addressDiv = document.getElementById('addresses')
   const addressUl = addressDiv.querySelector('ul')
   addressUl.innerHTML = ''
   addresses
@@ -1083,11 +1087,13 @@ async function fetchAddresses() {
     const addressData = await client.address.getAddresses({
       type: selectedType === 'all' ? undefined : selectedType,
       displayName: !searchText.length ? undefined : searchText,
+      pageSize: 10,
     })
     window.__addressData = addressData
-    updateAddressUI()
   } catch (error) {
     console.error('Unable to fetch addresses', error)
+  } finally {
+    updateAddressUI()
   }
 }
 
@@ -1176,9 +1182,10 @@ function createConversationListItem(convo) {
 }
 
 function updateHistoryUI() {
-  const historyDiv = document.getElementById('histories')
-  const { data: histories } = window.__historyData
+  const { data: histories } = window.__historyData || {}
+  if (!histories) return
 
+  const historyDiv = document.getElementById('histories')
   const historyUl = historyDiv.querySelector('ul')
   historyUl.innerHTML = ''
   histories
@@ -1193,10 +1200,11 @@ async function fetchHistories() {
   try {
     const historyData = await client.conversation.getConversations()
     window.__historyData = historyData
-    updateHistoryUI()
     subscribeToNewMessages()
   } catch (error) {
     console.error('Unable to fetch histories', error)
+  } finally {
+    updateHistoryUI()
   }
 }
 
@@ -1248,7 +1256,6 @@ function subscribeToNewMessages() {
       }
 
       // Update in call live messages
-      // FIXME: Make sure the message is for the current call based on newMsg.conversation_id
       const liveMessageList = document.querySelector('#liveMessageList')
       const newListItem = createLiveMessageListItem(newMsg)
       if (liveMessageList.firstChild) {
