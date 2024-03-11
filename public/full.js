@@ -89,20 +89,19 @@ async function enablePushNotifications() {
   const messaging = FB.getMessaging(app)
 
   FB.onMessage(messaging, (payload) => {
-    console.log('Push payload', payload)
-    const body = JSON.parse(payload.notification.body || '{}')
-    handlePushNotification(body)
+    console.log('Push payload.data.message', payload.data.message)
+    const message = JSON.parse(payload.data.message)
+    handlePushNotification(message.notification.body)
     alert(body.title)
   })
 
   try {
-    navigator.serviceWorker.addEventListener('message', event => {
-      console.log(`The service worker sent me a message: ${event.data}`);
+    navigator.serviceWorker.addEventListener('message', (event) => {
+      console.log(`The service worker sent me a message: ${event.data}`)
       const message = JSON.parse(event.data || '{}')
-      // FIXME I think with a real payload the body needs to be parsed
       handlePushNotification(message.notification.body)
       alert(body.title)
-    });
+    })
 
     const registration = await navigator.serviceWorker.register(
       '/service-worker.js',
@@ -353,6 +352,7 @@ function restoreUI() {
   btnAnswer.classList.add('d-none')
   btnReject.classList.add('d-none')
   tabs.classList.remove('d-none')
+  callConsole.classList.remove('ringing')
   connectStatus.innerHTML = 'Not Connected'
 
   inCallElements.forEach((button) => {
@@ -399,61 +399,51 @@ window.connect = async () => {
     return !!formValue && formValue.trim().length ? formValue.trim() : undefined
   }
 
-  const call = await client.dial({
-    to: document.getElementById('destination').value,
-    logLevel: 'debug',
-    debug: { logWsTraffic: true },
-    nodeId: steeringId(),
-  })
+  try {
+    const call = await client.dial({
+      to: document.getElementById('destination').value,
+      logLevel: 'debug',
+      debug: { logWsTraffic: true },
+      nodeId: steeringId(),
+    })
 
-  window.__call = call
-  roomObj = call
+    window.__call = call
+    roomObj = call
 
-  
-
-  const startHandler = (params) => {
-    console.debug('>> call.start() resolved', params)
-
-    updateUIConnected()
-
-    // loadLayouts()
-  }
-
-  const startCall = async () => new Promise(async (res, rej) => {
     await call.start()
+
     console.debug('Call Obj', call)
-    startHandler()
-  });
 
-  const startPromise = startCall()
-  
-  // don't wait the start to add the event listeners
-  roomObj.on('room.joined', (params) => {
-    console.log('>> room.joined', params)
-    console.warn('Dont use room.joined as source of truth for the members list')
-  })
+    const joinHandler = (params) => {
+      console.debug('>> room.joined', params)
 
-  roomObj.on('media.connected', () => {
-    console.debug('>> media.connected')
-  })
-  roomObj.on('media.reconnecting', () => {
-    console.debug('>> media.reconnecting')
-  })
-  roomObj.on('media.disconnected', () => {
-    console.debug('>> media.disconnected')
-  })
+      updateUIConnected()
 
-  roomObj.on('room.started', (params) =>
-    console.debug('>> room.started', params)
-  )
+      // loadLayouts()
+    }
+    joinHandler()
 
-  roomObj.on('destroy', () => {
-    console.debug('>> destroy')
-    restoreUI()
-  })
-  roomObj.on('room.updated', (params) =>
-    console.debug('>> room.updated', params)
-  )
+    roomObj.on('media.connected', () => {
+      console.debug('>> media.connected')
+    })
+    roomObj.on('media.reconnecting', () => {
+      console.debug('>> media.reconnecting')
+    })
+    roomObj.on('media.disconnected', () => {
+      console.debug('>> media.disconnected')
+    })
+
+    roomObj.on('room.started', (params) =>
+      console.debug('>> room.started', params)
+    )
+
+    roomObj.on('destroy', () => {
+      console.debug('>> destroy')
+      restoreUI()
+    })
+    roomObj.on('room.updated', (params) =>
+      console.debug('>> room.updated', params)
+    )
 
   roomObj.on('recording.started', (params) => {
     console.debug('>> recording.started', params)
@@ -488,12 +478,12 @@ window.connect = async () => {
     console.debug('>> member.talking', params)
   )
 
-  roomObj.on('member.updated.audio_muted', (params) =>
-    console.debug('>> member.updated.audio_muted', params)
-  )
-  roomObj.on('member.updated.video_muted', (params) =>
-    console.debug('>> member.updated.video_muted', params)
-  )
+    roomObj.on('member.updated.audio_muted', (params) =>
+      console.debug('>> member.updated.audio_muted', params)
+    )
+    roomObj.on('member.updated.video_muted', (params) =>
+      console.debug('>> member.updated.video_muted', params)
+    )
 
   roomObj.on('member.left', (params) => {
     console.debug('>> member.left', params)
@@ -507,31 +497,37 @@ window.connect = async () => {
   )
   roomObj.on('track', (event) => console.debug('>> DEMO track', event))
 
-  roomObj.on('playback.started', (params) => {
-    console.debug('>> playback.started', params)
+    roomObj.on('playback.started', (params) => {
+      console.debug('>> playback.started', params)
 
-    playbackStarted()
-  })
-  roomObj.on('playback.ended', (params) => {
-    console.debug('>> playback.ended', params)
+      playbackStarted()
+    })
+    roomObj.on('playback.ended', (params) => {
+      console.debug('>> playback.ended', params)
 
-    playbackEnded()
-  })
-  roomObj.on('playback.updated', (params) => {
-    console.debug('>> playback.updated', params)
+      playbackEnded()
+    })
+    roomObj.on('playback.updated', (params) => {
+      console.debug('>> playback.updated', params)
 
-    if (params.volume) {
-      document.getElementById('playbackVolume').value = params.volume
-    }
-  })
-  console.log('waiting callStart')
-  await startPromise
+      if (params.volume) {
+        document.getElementById('playbackVolume').value = params.volume
+      }
+    })
+  } catch (e) {
+    alert(
+      `Something went wrong trying to dial ${
+        document.getElementById('destination').value
+      }`
+    )
+  }
 }
 
 function updateUIRinging() {
   btnConnect.classList.add('d-none')
   btnAnswer.classList.remove('d-none')
   btnReject.classList.remove('d-none')
+  callConsole.classList.add('ringing')
   connectStatus.innerHTML = 'Ringing'
 
   inCallElements.forEach((button) => {
@@ -546,6 +542,7 @@ function updateUIConnected() {
   btnReject.classList.add('d-none')
   tabs.classList.add('d-none')
   btnDisconnect.classList.remove('d-none')
+  callConsole.classList.remove('ringing')
   connectStatus.innerHTML = 'Connected'
 
   inCallElements.forEach((button) => {
@@ -595,6 +592,14 @@ window.ready = (callback) => {
         callback()
       }
     })
+  }
+  const localSteeringId = document.getElementById('steeringId')
+  localSteeringId.value = localStorage.getItem('fabric.ws.steeringId') || ''
+
+  // Destination is populated through ENV by default
+  const localDestination = localStorage.getItem('fabric.ws.destination')
+  if (localDestination) {
+    document.getElementById('destination').value = localDestination
   }
 }
 
@@ -947,12 +952,12 @@ function isBlank(str) {
 window.toggleTabState = async (activeButtonName) => {
   const config = [
     {
-      name: 'Directory',
+      name: 'directory',
       button: document.querySelector('button[name="Directory"]'),
       card: document.getElementById('addressCard'),
     },
     {
-      name: 'History',
+      name: 'history',
       button: document.querySelector('button[name="History"]'),
       card: document.getElementById('historyCard'),
     },
@@ -970,12 +975,59 @@ window.toggleTabState = async (activeButtonName) => {
     }
   })
 
-  if (activeButtonName === 'History') {
+  if (activeButtonName === 'history') {
     await fetchHistories()
   }
 
-  if (activeButtonName === 'Directory') {
+  if (activeButtonName === 'directory') {
     await fetchAddresses()
+  }
+}
+
+function updatePaginationUI(activeButtonName) {
+  const config = [
+    {
+      name: 'address',
+      paginationDiv: document.getElementById('addressPagination'),
+      data: window.__addressData,
+      fetchNext: fetchNextAddresses,
+      fetcthPrev: fetchPrevAddresses,
+    },
+    {
+      name: 'history',
+      paginationDiv: document.getElementById('historyPagination'),
+      data: window.__historyData,
+      fetchNext: fetchNextHistories,
+      fetcthPrev: fetchPrevHistories,
+    },
+    {
+      name: 'message',
+      paginationDiv: document.getElementById('messagePagination'),
+      data: window.__messageData,
+      fetchNext: fetchNextMessages,
+      fetcthPrev: fetchPrevMessages,
+    },
+  ]
+
+  const currentConf = config.find((conf) => conf.name === activeButtonName)
+  if (!currentConf?.data) return
+
+  currentConf.paginationDiv.classList.remove('d-none')
+  const nextBtn = currentConf.paginationDiv.querySelector(
+    'button[name="fetch-next"]'
+  )
+  const prevBtn = currentConf.paginationDiv.querySelector(
+    'button[name="fetch-prev"]'
+  )
+
+  if (nextBtn) {
+    nextBtn.onclick = currentConf.fetchNext
+    nextBtn.disabled = !currentConf.data.hasNext
+  }
+
+  if (prevBtn) {
+    prevBtn.onclick = currentConf.fetcthPrev
+    prevBtn.disabled = !currentConf.data.hasPrev
   }
 }
 
@@ -1211,14 +1263,17 @@ function updateMembersUI() {
 }
 
 function updateAddressUI() {
-  const addressDiv = document.getElementById('addresses')
-  const { data: addresses } = window.__addressData
+  const { data: addresses } = window.__addressData || {}
+  if (!addresses) return
 
+  const addressDiv = document.getElementById('addresses')
   const addressUl = addressDiv.querySelector('ul')
   addressUl.innerHTML = ''
   addresses
     .map(createAddressListItem)
     .forEach((item) => addressUl.appendChild(item))
+
+  updatePaginationUI('address')
 }
 
 async function fetchAddresses() {
@@ -1230,23 +1285,26 @@ async function fetchAddresses() {
     const addressData = await client.address.getAddresses({
       type: selectedType === 'all' ? undefined : selectedType,
       displayName: !searchText.length ? undefined : searchText,
+      pageSize: 10,
     })
     window.__addressData = addressData
-    updateAddressUI()
   } catch (error) {
     console.error('Unable to fetch addresses', error)
+  } finally {
+    updateAddressUI()
   }
 }
 
-window.dialAddress = async (address) => {
+async function dialAddress(address) {
   const destinationInput = document.getElementById('destination')
   destinationInput.value = address
   connect()
 }
 
-window.fetchNextAddresses = async () => {
-  const { nextPage } = window.__addressData
+async function fetchNextAddresses() {
+  const { hasNext, nextPage } = window.__addressData
   try {
+    if (!hasNext) return
     const nextAddresses = await nextPage()
     window.__addressData = nextAddresses
     updateAddressUI()
@@ -1255,9 +1313,10 @@ window.fetchNextAddresses = async () => {
   }
 }
 
-window.fetchPrevAddresses = async () => {
-  const { prevPage } = window.__addressData
+async function fetchPrevAddresses() {
+  const { hasPrev, prevPage } = window.__addressData
   try {
+    if (!hasPrev) return
     const prevAddresses = await prevPage()
     window.__addressData = prevAddresses
     updateAddressUI()
@@ -1321,14 +1380,17 @@ function createConversationListItem(convo) {
 }
 
 function updateHistoryUI() {
-  const historyDiv = document.getElementById('histories')
-  const { data: histories } = window.__historyData
+  const { data: histories } = window.__historyData || {}
+  if (!histories) return
 
+  const historyDiv = document.getElementById('histories')
   const historyUl = historyDiv.querySelector('ul')
   historyUl.innerHTML = ''
   histories
     .map(createConversationListItem)
     .forEach((item) => historyUl.appendChild(item))
+
+  updatePaginationUI('history')
 }
 
 async function fetchHistories() {
@@ -1336,10 +1398,11 @@ async function fetchHistories() {
   try {
     const historyData = await client.conversation.getConversations()
     window.__historyData = historyData
-    updateHistoryUI()
     subscribeToNewMessages()
   } catch (error) {
     console.error('Unable to fetch histories', error)
+  } finally {
+    updateHistoryUI()
   }
 }
 
@@ -1391,7 +1454,6 @@ function subscribeToNewMessages() {
       }
 
       // Update in call live messages
-      // FIXME: Make sure the message is for the current call based on newMsg.conversation_id
       const liveMessageList = document.querySelector('#liveMessageList')
       const newListItem = createLiveMessageListItem(newMsg)
       if (liveMessageList.firstChild) {
@@ -1401,6 +1463,30 @@ function subscribeToNewMessages() {
       }
     })
     isConvoSubscribed = true
+  }
+}
+
+async function fetchNextHistories() {
+  const { hasNext, nextPage } = window.__historyData
+  try {
+    if (!hasNext) return
+    const nextHistory = await nextPage()
+    window.__historyData = nextHistory
+    updateAddressUI()
+  } catch (error) {
+    console.error('Unable to fetch next histories', error)
+  }
+}
+
+async function fetchPrevHistories() {
+  const { hasPrev, prevPage } = window.__historyData
+  try {
+    if (!hasPrev) return
+    const prevHistory = await prevPage()
+    window.__historyData = prevHistory
+    updateAddressUI()
+  } catch (error) {
+    console.error('Unable to fetch prev histories', error)
   }
 }
 
@@ -1437,11 +1523,13 @@ function clearMessageModal() {
   const typeBadgeSpan = msgModalDiv.querySelector('.type-badge')
   const contactBtnDiv = msgModalDiv.querySelector('.contact-buttons')
   const messageList = msgModalDiv.querySelector('#messageList')
+  const messagePagination = msgModalDiv.querySelector('#messagePagination')
   const loaderListItem = msgModalDiv.querySelector('#messageList li')
   const avatarImage = msgModalDiv.querySelector('.avatar')
   titleH2.textContent = ''
   typeBadgeSpan.textContent = ''
   contactBtnDiv.classList.add('d-none')
+  messagePagination.classList.add('d-none')
   // Remove all the message list item except the first one (loader)
   Array.from(messageList.children)
     .slice(1)
@@ -1521,6 +1609,8 @@ function updateMessageUI() {
   messages
     .map(createMessageListItem)
     .forEach((li) => messageList.appendChild(li))
+
+  updatePaginationUI('message')
 }
 
 async function fetchMessages(id) {
@@ -1533,6 +1623,30 @@ async function fetchMessages(id) {
     updateMessageUI()
   } catch (error) {
     console.error('Unable to fetch messages', error)
+  }
+}
+
+async function fetchNextMessages() {
+  const { hasNext, nextPage } = window.__messageData
+  try {
+    if (!hasNext) return
+    const nextMessage = await nextPage()
+    window.__messageData = nextMessage
+    updateMessageUI()
+  } catch (error) {
+    console.error('Unable to fetch next message', error)
+  }
+}
+
+async function fetchPrevMessages() {
+  const { hasPrev, prevPage } = window.__messageData
+  try {
+    if (!hasPrev) return
+    const prevMessage = await prevPage()
+    window.__messageData = prevMessage
+    updateMessageUI()
+  } catch (error) {
+    console.error('Unable to fetch prev message', error)
   }
 }
 
