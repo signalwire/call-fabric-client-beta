@@ -558,7 +558,7 @@ window.__incomingCallNotification = (notification) => {
 }
 
 window.answer = async () => {
-  const call = await window.__invite.accept(document.getElementById('rootElement'))
+  const call = await window.__invite.accept({rootElement: document.getElementById('rootElement')})
   window.__call = call
   window.__call.on('destroy', () => {
     console.warn('Inbound Call got cancelled!!')
