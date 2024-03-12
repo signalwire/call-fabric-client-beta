@@ -120,7 +120,7 @@ async function enablePushNotifications() {
       await new Promise((resolve) => {
         serviceWorker.addEventListener('statechange', ({ target }) => {
           if (target.state === 'activated') {
-            resolve()
+                        resolve()
           }
         })
       })
@@ -358,12 +358,14 @@ function restoreUI() {
     button.classList.add('d-none')
     button.disabled = true
   })
+  window.__membersData = {}
+  updateMembersUI()
 }
 
 async function getClient() {
   if (!client && _token) {
     client = await SWire({
-      host: _host,
+      host: !!_host && _host.trim().length ? _host : undefined,
       token: _token,
       rootElement: document.getElementById('rootElement'),
     })
@@ -380,6 +382,7 @@ window.connect = async () => {
     console.error('Auth required!')
     return
   }
+  window.__membersData = {}
 
   const client = await getClient()
   window.__client = client
@@ -404,19 +407,7 @@ window.connect = async () => {
     window.__call = call
     roomObj = call
 
-    await call.start()
-
-    console.debug('Call Obj', call)
-
-    const joinHandler = (params) => {
-      console.debug('>> room.joined', params)
-
-      updateUIConnected()
-
-      // loadLayouts()
-    }
-    joinHandler()
-
+    
     roomObj.on('media.connected', () => {
       console.debug('>> media.connected')
     })
@@ -426,19 +417,19 @@ window.connect = async () => {
     roomObj.on('media.disconnected', () => {
       console.debug('>> media.disconnected')
     })
-
+    
     roomObj.on('room.started', (params) =>
-      console.debug('>> room.started', params)
+    console.debug('>> room.started', params)
     )
-
+    
     roomObj.on('destroy', () => {
       console.debug('>> destroy')
       restoreUI()
     })
     roomObj.on('room.updated', (params) =>
-      console.debug('>> room.updated', params)
+    console.debug('>> room.updated', params)
     )
-
+    
     roomObj.on('recording.started', (params) => {
       console.debug('>> recording.started', params)
       document.getElementById('recordingState').innerText = 'recording'
@@ -455,59 +446,84 @@ window.connect = async () => {
       console.debug('>> room.ended', params)
       hangup()
     })
-    roomObj.on('member.joined', (params) =>
+    roomObj.on('member.joined', (params) => {
       console.debug('>> member.joined', params)
-    )
-    roomObj.on('member.updated', (params) =>
+      window.__membersData = window.__membersData || {} 
+      window.__membersData[params.id] = params
+      updateMembersUI()
+    })
+    roomObj.on('member.updated', (params) => {
       console.debug('>> member.updated', params)
+      window.__membersData = window.__membersData || {} 
+      window.__membersData[params.id] = params
+      updateMembersUI()
+    }
     )
-
+    roomObj.on('member.talking', (params) =>
+    console.debug('>> member.talking', params)
+    )
+    
     roomObj.on('member.updated.audio_muted', (params) =>
-      console.debug('>> member.updated.audio_muted', params)
+    console.debug('>> member.updated.audio_muted', params)
     )
     roomObj.on('member.updated.video_muted', (params) =>
-      console.debug('>> member.updated.video_muted', params)
+    console.debug('>> member.updated.video_muted', params)
     )
-
-    roomObj.on('member.left', (params) =>
+    
+    roomObj.on('member.left', (params) => {
       console.debug('>> member.left', params)
-    )
+      if(window.__membersData[params.member_id]) {
+        delete window.__membersData[params.member_id]
+      }
+    })
     roomObj.on('member.talking', (params) =>
       console.debug('>> member.talking', params)
     )
     roomObj.on('layout.changed', (params) =>
-      console.debug('>> layout.changed', params)
+    console.debug('>> layout.changed', params)
     )
     roomObj.on('track', (event) => console.debug('>> DEMO track', event))
-
+    
     roomObj.on('playback.started', (params) => {
       console.debug('>> playback.started', params)
-
+      
       playbackStarted()
     })
     roomObj.on('playback.ended', (params) => {
       console.debug('>> playback.ended', params)
-
+      
       playbackEnded()
     })
     roomObj.on('playback.updated', (params) => {
       console.debug('>> playback.updated', params)
-
+      
       if (params.volume) {
         document.getElementById('playbackVolume').value = params.volume
       }
     })
+    await call.start()
+  
+    console.debug('Call Obj', call)
+  
+    const joinHandler = (params) => {
+      console.debug('>> room.joined', params)
+  
+      updateUIConnected()
+  
+      // loadLayouts()
+    }
+    joinHandler()
   } catch (e) {
     alert(
       `Something went wrong trying to dial ${
         document.getElementById('destination').value
       }`
-    )
+      )
+    }
   }
-}
-
-function updateUIRinging() {
-  btnConnect.classList.add('d-none')
+  
+  function updateUIRinging() {
+    btnConnect.classList.add('d-none')
   btnAnswer.classList.remove('d-none')
   btnReject.classList.remove('d-none')
   callConsole.classList.add('ringing')
@@ -639,12 +655,28 @@ window.unmuteSelf = () => {
   roomObj.audioUnmute()
 }
 
+window.muteMember = (id) => {
+  roomObj.audioMute({ memberId: id})
+}
+
+window.unmuteMember = (id) => {
+  roomObj.audioUnmute({ memberId: id })
+}
+
 window.muteVideoAll = () => {
   roomObj.videoMute({ memberId: 'all' })
 }
 
 window.unmuteVideoAll = () => {
   roomObj.videoUnmute({ memberId: 'all' })
+}
+
+window.muteVideoMember = (id) => {
+  roomObj.videoMute({ memberId: id })
+}
+
+window.unmuteVideoMember= () => {
+  roomObj.videoUnmute({ memberId: id })
 }
 
 window.muteVideoSelf = () => {
@@ -1062,6 +1094,171 @@ const createAddressListItem = (address) => {
   container.appendChild(row2)
 
   return listItem
+}
+
+function updateMembersUI() {
+  const membersDiv = document.getElementById('members')
+  membersDiv.innerHTML = ''
+  const members = window.__membersData
+
+  const createMemberItem = (member) => {
+
+    const createChildElement = (options) => {
+      const el = document.createElement(options.tag)
+      
+      Object.entries(options).forEach(([key, value]) => {
+        if(['tag', 'parent'].includes(key)) return
+        el[key] = value
+      })
+
+      options.parent.appendChild(el);
+
+      return el;
+    }
+    
+    const listItem = document.createElement('li')
+    listItem.className = "list-group-item"
+
+    const memberDiv = document.createElement('div');
+    memberDiv.className = 'row p-0';
+    listItem.appendChild(memberDiv);
+    
+    createChildElement({
+      tag: 'div',
+      textContent: member.type,
+      className: 'badge bg-primary me-2',
+      parent: memberDiv
+    })
+
+    createChildElement({
+      tag: 'div',
+      textContent: member.id,
+      parent: memberDiv
+    })
+
+    createChildElement({
+      tag: 'div',
+      textContent: member.name,
+      parent: memberDiv
+    })
+
+    createChildElement({
+      tag: 'div',
+      textContent: `${member.currentPosition}=>${member.requestedPosition}`,
+      parent: memberDiv
+    })
+
+    createChildElement({
+      tag: 'div',
+      textContent:  member.meta ? Object.entries(member.meta).reduce((previous, [key, value])=> {
+        return `${previous},${key}:${value}`
+      }, '') : 'no meta',
+      parent: memberDiv
+    })
+
+    createChildElement({
+      tag: 'div',
+      textContent: `visible:${member.visible}`,
+      parent: memberDiv
+    })
+
+    createChildElement({
+      tag: 'div',
+      textContent: `audio muted:${member.audio_muted}`,
+      parent: memberDiv
+    })
+
+    createChildElement({
+      tag: 'div',
+      textContent: `video muted:${member.video_muted}`,
+      parent: memberDiv
+    })
+
+    createChildElement({
+      tag: 'div',
+      textContent: `deaf:${member.deaf}`,
+      parent: memberDiv
+    })
+
+    createChildElement({
+      tag: 'div',
+      textContent: `talking: ${member.talking}`,
+      parent: memberDiv
+    })
+
+    createChildElement({
+      tag: 'div',
+      textContent: `handraised: ${member.handraised}`,
+      parent: memberDiv
+    })
+
+    createChildElement({
+      tag: 'div',
+      textContent: `input volume: ${member.input_volume}`,
+      parent: memberDiv
+    })
+
+    createChildElement({
+      tag: 'div',
+      textContent: `input sensitivity: ${member.input_sensitivity}`,
+      parent: memberDiv
+    })
+
+    createChildElement({
+      tag: 'div',
+      textContent: `input volume: ${member.output_volume}`,
+      parent: memberDiv
+    })
+
+    const actionsDiv = createChildElement({
+      tag: 'div',
+      className: 'btn-group-vertical btn-group-sm',
+      parent: memberDiv
+    })
+
+    createChildElement({
+      tag: 'a',
+      className: 'btn btn-warning',
+      textContent: 'mute audio',
+      href: '#',
+      onclick: () => window.muteMember(member.id),
+      parent: actionsDiv
+    })
+    createChildElement({
+      tag: 'a',
+      className: 'btn btn-warning',
+      textContent: 'unmute audio',
+      href: '#',
+      onclick: () => window.unmuteMember(member.id),
+      parent: actionsDiv
+    })
+    createChildElement({
+      tag: 'a',
+      className: 'btn btn-warning',
+      textContent: 'mute video',
+      href: '#',
+      onclick: () => console.log('### Nothing Executed ###'),
+      parent: actionsDiv
+    })
+    createChildElement({
+      tag: 'a',
+      className: 'btn btn-warning',
+      textContent: 'unmute video',
+      href: '#',
+      onclick: () => console.log('### Nothing Executed ###'),
+      parent: actionsDiv
+    })
+
+    memberDiv.appendChild(actionsDiv)
+
+    return listItem
+
+  }
+
+  Object.values(members)
+    .map(createMemberItem)
+    .forEach((memberCard) => membersDiv.appendChild(memberCard))
+
 }
 
 function updateAddressUI() {
