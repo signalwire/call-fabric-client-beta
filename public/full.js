@@ -142,6 +142,7 @@ async function enablePushNotifications() {
         deviceType: 'Android', // Use Android w/ Firebase on the web
         deviceToken: token,
       })
+      client.online({pushNotification: __incomingCallNotification})
       pnSecretKey = push_notification_key
       console.log('pnSecretKey: ', pnSecretKey)
       btnRegister.classList.add('d-none')
@@ -165,11 +166,7 @@ async function handlePushNotification(pushNotificationPayload) {
 
     switch (resultType) {
       case 'inboundCall':
-        window.__call = resultObject
-        window.__call.on('destroy', () => {
-          console.warn('Inbound Call got cancelled!!')
-        })
-        updateUIRinging()
+        this.logger.info('Inbound Call Push Notification received')
         break
       default:
         this.logger.warn('Unknown resultType', resultType, resultObject)
@@ -367,7 +364,7 @@ async function getClient() {
     client = await SWire({
       host: !!_host && _host.trim().length ? _host : undefined,
       token: _token,
-      rootElement: document.getElementById('rootElement'),
+      // rootElement: document.getElementById('rootElement'),
     })
   }
 
@@ -402,6 +399,7 @@ window.connect = async () => {
       logLevel: 'debug',
       debug: { logWsTraffic: true },
       nodeId: steeringId(),
+      rootElement: document.getElementById('rootElement')
     })
 
     window.__call = call
@@ -550,13 +548,42 @@ function updateUIConnected() {
   })
 }
 
+window.__avaliable = false
+
+window.toggleAvaliable = async () => {
+  window.__avaliable = ! window.__avaliable
+  const isOn = window.__avaliable
+  btnAvaliable.innerText = isOn ? 'get offline' : 'get online'
+  btnAvaliable.classList = isOn ? 'btn btn-success' : 'btn btn-warning'
+  if(!window.__client) {
+    window.__client = await getClient()
+  }
+  
+  if(isOn) {
+    window.__client.online({all: __incomingCallNotification})
+  } else {
+    window.__client.offline()
+  }
+}
+
+window.__incomingCallNotification = (notification) => {
+  if(!window.__invite || window.__invite.details.callID !== notification.invite.details.callID) {
+    window.__invite = notification.invite
+  }
+  updateUIRinging()
+}
+
 window.answer = async () => {
-  await window.__call.answer()
+  const call = await window.__invite.accept({rootElement: document.getElementById('rootElement')})
+  window.__call = call
+  window.__call.on('destroy', () => {
+    console.warn('Inbound Call got cancelled!!')
+  })
   updateUIConnected()
 }
 
 window.reject = async () => {
-  await window.__call.hangup()
+  await window.__invite.reject()
   restoreUI()
 }
 /**
