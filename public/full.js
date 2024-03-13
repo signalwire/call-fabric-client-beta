@@ -537,12 +537,12 @@ window.__avaliable = false
 window.toggleAvaliable = async () => {
   window.__avaliable = ! window.__avaliable
   const isOn = window.__avaliable
-  btnAvaliable.innerText = isOn ? 'away' : 'avaliable'
+  btnAvaliable.innerText = isOn ? 'get offline' : 'get online'
   btnAvaliable.classList = isOn ? 'btn btn-success' : 'btn btn-warning'
   if(!window.__client) {
     window.__client = await getClient()
   }
-  client
+  
   if(isOn) {
     window.__client.online({all: __incomingCallNotification})
   } else {
