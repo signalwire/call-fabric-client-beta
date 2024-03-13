@@ -142,7 +142,7 @@ async function enablePushNotifications() {
         deviceType: 'Android', // Use Android w/ Firebase on the web
         deviceToken: token,
       })
-      client.online({pushNotification: __incomingCallNotification})
+      client.online({incomingCallHandlers:{pushNotification: __incomingCallNotification}})
       pnSecretKey = push_notification_key
       console.log('pnSecretKey: ', pnSecretKey)
       btnRegister.classList.add('d-none')
@@ -560,7 +560,7 @@ window.toggleAvaliable = async () => {
   }
   
   if(isOn) {
-    window.__client.online({all: __incomingCallNotification})
+    window.__client.online({incomingCallHandlers: {all: __incomingCallNotification}})
   } else {
     window.__client.offline()
   }
