@@ -36,7 +36,7 @@ const fabricApiUrl = process.env.SIGNALWIRE_FABRIC_API_URL
 
 function getCallbackUrl(req) {
   const protocol = req.get('x-forwarded-proto') || req.protocol
-  return `${protocol}://${req.get('host')}/callback`
+  return process.env.OAUTH_REDIRECT_URI ?? `${protocol}://${req.get('host')}/callback`
 }
 
 async function apiRequest(uri, options) {
@@ -80,6 +80,7 @@ async function getSubscriberToken(reference, password) {
     reference: reference,
     password: password,
     application_id: process.env.OAUTH_APPLICATION_ID,
+    ch: process.env.SAT_CH,
   }
 
   return await apiRequest(
