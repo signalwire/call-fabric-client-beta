@@ -364,7 +364,10 @@ async function getClient() {
     client = await SWire({
       host: !!_host && _host.trim().length ? _host : undefined,
       token: _token,
-      // rootElement: document.getElementById('rootElement'),
+      debug: {
+        logWsTraffic: true,
+      },
+      logLevel: 'debug',
     })
   }
 
@@ -445,15 +448,17 @@ window.connect = async () => {
       hangup()
     })
     roomObj.on('member.joined', (params) => {
-      console.debug('>> member.joined', params)
+      const { member } = params;
+      console.debug('>> member.joined', member)
       window.__membersData = window.__membersData || {} 
-      window.__membersData[params.id] = params
+      window.__membersData[member.id] = member
       updateMembersUI()
     })
     roomObj.on('member.updated', (params) => {
-      console.debug('>> member.updated', params)
+      const { member } = params;
+      console.debug('>> member.updated', member)
       window.__membersData = window.__membersData || {} 
-      window.__membersData[params.id] = params
+      window.__membersData[member.id] = member
       updateMembersUI()
     }
     )
@@ -467,11 +472,19 @@ window.connect = async () => {
     roomObj.on('member.updated.video_muted', (params) =>
     console.debug('>> member.updated.video_muted', params)
     )
+
+    roomObj.on('member.updated.audioMuted', (params) =>
+    console.debug('>> member.updated.audioMuted', params)
+    )
+    roomObj.on('member.updated.videoMuted', (params) =>
+    console.debug('>> member.updated.videoMuted', params)
+    )
     
     roomObj.on('member.left', (params) => {
-      console.debug('>> member.left', params)
-      if(window.__membersData[params.member_id]) {
-        delete window.__membersData[params.member_id]
+      const { member } = params;
+      console.debug('>> member.left', member)
+      if(window.__membersData[member.member_id]) {
+        delete window.__membersData[member.member_id]
       }
     })
     roomObj.on('member.talking', (params) =>
