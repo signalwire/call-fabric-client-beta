@@ -111,11 +111,11 @@ async function getSubscriberToken(reference, password) {
   )
 }
 
-function updateSessionToken(req, tokenData) {
+function updateSessionToken(session, tokenData) {
   const tokenExpires = Math.floor(Date.now() / 1000 + (tokenData.expires_in || 0))
-  req.session.token = tokenData.access_token
-  req.session.refreshToken = tokenData.refresh_token
-  req.session.tokenExpires = tokenExpires
+  session.token = tokenData.access_token
+  session.refreshToken = tokenData.refresh_token
+  session.tokenExpires = tokenExpires
 }
 
 app.get('/', async (req, res) => {
@@ -127,7 +127,7 @@ app.get('/', async (req, res) => {
 
     if (Date.now() < req.session.tokenExpires * 1000) {
       const tokenData = await refreshAccessToken(req.session.refreshToken)
-      updateSessionToken(req, tokenData)
+      updateSessionToken(req.session, tokenData)
     }
   }
 
@@ -186,7 +186,7 @@ app.get('/callback', async (req, res) => {
 
   try {
     const tokenData = await getAccessToken(req.query.code, req.session.verifier, callbackUrl)
-    updateSessionToken(req, tokenData)
+    updateSessionToken(req.session, tokenData)
     const token = tokenData.access_token
 
     const userInfo = await getUserInfo(token)
