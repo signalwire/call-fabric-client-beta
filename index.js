@@ -186,8 +186,8 @@ app.get('/callback', async (req, res) => {
 
   try {
     const tokenData = await getAccessToken(req.query.code, req.session.verifier, callbackUrl)
-    updateSessionToken(req.session, tokenData)
     const token = tokenData.access_token
+    updateSessionToken(req.session, tokenData)
 
     const userInfo = await getUserInfo(token)
     req.session.user = userInfo
