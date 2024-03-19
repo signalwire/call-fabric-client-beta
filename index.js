@@ -65,19 +65,6 @@ async function getAccessToken(code, verifier, callbackUrl) {
   })
 }
 
-async function refreshAccessToken(refreshToken) {
-  const params = new URLSearchParams()
-  params.append('client_id', process.env.OAUTH_CLIENT_ID)
-  params.append('grant_type', 'refresh_token')
-  params.append('refresh_token')
-
-  return await apiRequest(process.env.OAUTH_TOKEN_URI, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: params,
-  })
-}
-
 async function getUserInfo(accessToken) {
   return await apiRequest(process.env.OAUTH_USERINFO_URI, {
     method: 'GET',
@@ -111,24 +98,12 @@ async function getSubscriberToken(reference, password) {
   )
 }
 
-function updateSessionToken(session, tokenData) {
-  const tokenExpires = Math.floor(Date.now() / 1000 + (tokenData.expires_in || 0))
-  session.token = tokenData.access_token
-  session.refreshToken = tokenData.refresh_token
-  session.tokenExpires = tokenExpires
-}
-
 app.get('/', async (req, res) => {
   let token
   let user
   if (req.session && req.session.token) {
     token = req.session.token
     user = req.session.user
-
-    if (Date.now() < req.session.tokenExpires * 1000) {
-      const tokenData = await refreshAccessToken(req.session.refreshToken)
-      updateSessionToken(req.session, tokenData)
-    }
   }
 
   res.render('index', {
@@ -187,7 +162,7 @@ app.get('/callback', async (req, res) => {
   try {
     const tokenData = await getAccessToken(req.query.code, req.session.verifier, callbackUrl)
     const token = tokenData.access_token
-    updateSessionToken(req.session, tokenData)
+    req.session.token = token
 
     const userInfo = await getUserInfo(token)
     req.session.user = userInfo
