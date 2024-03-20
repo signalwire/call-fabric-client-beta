@@ -120,7 +120,7 @@ async function enablePushNotifications() {
       await new Promise((resolve) => {
         serviceWorker.addEventListener('statechange', ({ target }) => {
           if (target.state === 'activated') {
-                        resolve()
+            resolve()
           }
         })
       })
@@ -142,7 +142,9 @@ async function enablePushNotifications() {
         deviceType: 'Android', // Use Android w/ Firebase on the web
         deviceToken: token,
       })
-      client.online({incomingCallHandlers:{pushNotification: __incomingCallNotification}})
+      client.online({
+        incomingCallHandlers: { pushNotification: __incomingCallNotification },
+      })
       pnSecretKey = push_notification_key
       console.log('pnSecretKey: ', pnSecretKey)
       btnRegister.classList.add('d-none')
@@ -402,13 +404,12 @@ window.connect = async () => {
       logLevel: 'debug',
       debug: { logWsTraffic: true },
       nodeId: steeringId(),
-      rootElement: document.getElementById('rootElement')
+      rootElement: document.getElementById('rootElement'),
     })
 
     window.__call = call
     roomObj = call
 
-    
     roomObj.on('media.connected', () => {
       console.debug('>> media.connected')
     })
@@ -418,19 +419,19 @@ window.connect = async () => {
     roomObj.on('media.disconnected', () => {
       console.debug('>> media.disconnected')
     })
-    
+
     roomObj.on('room.started', (params) =>
-    console.debug('>> room.started', params)
+      console.debug('>> room.started', params)
     )
-    
+
     roomObj.on('destroy', () => {
       console.debug('>> destroy')
       restoreUI()
     })
     roomObj.on('room.updated', (params) =>
-    console.debug('>> room.updated', params)
+      console.debug('>> room.updated', params)
     )
-    
+
     roomObj.on('recording.started', (params) => {
       console.debug('>> recording.started', params)
       document.getElementById('recordingState').innerText = 'recording'
@@ -448,35 +449,34 @@ window.connect = async () => {
       hangup()
     })
     roomObj.on('member.joined', (params) => {
-      const { member } = params;
+      const { member } = params
       console.debug('>> member.joined', member)
-      window.__membersData = window.__membersData || {} 
+      window.__membersData = window.__membersData || {}
       window.__membersData[member.id] = member
       updateMembersUI()
     })
     roomObj.on('member.updated', (params) => {
-      const { member } = params;
+      const { member } = params
       console.debug('>> member.updated', member)
-      window.__membersData = window.__membersData || {} 
+      window.__membersData = window.__membersData || {}
       window.__membersData[member.id] = member
       updateMembersUI()
-    }
-    )
+    })
     roomObj.on('member.talking', (params) =>
-    console.debug('>> member.talking', params)
+      console.debug('>> member.talking', params)
     )
-    
+
     roomObj.on('member.updated.audio_muted', (params) =>
-    console.debug('>> member.updated.audio_muted', params)
+      console.debug('>> member.updated.audio_muted', params)
     )
     roomObj.on('member.updated.video_muted', (params) =>
-    console.debug('>> member.updated.video_muted', params)
+      console.debug('>> member.updated.video_muted', params)
     )
-    
+
     roomObj.on('member.left', (params) => {
-      const { member } = params;
+      const { member } = params
       console.debug('>> member.left', member)
-      if(window.__membersData[member.member_id]) {
+      if (window.__membersData[member.member_id]) {
         delete window.__membersData[member.member_id]
       }
     })
@@ -484,36 +484,36 @@ window.connect = async () => {
       console.debug('>> member.talking', params)
     )
     roomObj.on('layout.changed', (params) =>
-    console.debug('>> layout.changed', params)
+      console.debug('>> layout.changed', params)
     )
     roomObj.on('track', (event) => console.debug('>> DEMO track', event))
-    
+
     roomObj.on('playback.started', (params) => {
       console.debug('>> playback.started', params)
-      
+
       playbackStarted()
     })
     roomObj.on('playback.ended', (params) => {
       console.debug('>> playback.ended', params)
-      
+
       playbackEnded()
     })
     roomObj.on('playback.updated', (params) => {
       console.debug('>> playback.updated', params)
-      
+
       if (params.volume) {
         document.getElementById('playbackVolume').value = params.volume
       }
     })
     await call.start()
-  
+
     console.debug('Call Obj', call)
-  
+
     const joinHandler = (params) => {
       console.debug('>> room.joined', params)
-  
+
       updateUIConnected()
-  
+
       // loadLayouts()
     }
     joinHandler()
@@ -522,12 +522,12 @@ window.connect = async () => {
       `Something went wrong trying to dial ${
         document.getElementById('destination').value
       }`
-      )
-    }
+    )
   }
-  
-  function updateUIRinging() {
-    btnConnect.classList.add('d-none')
+}
+
+function updateUIRinging() {
+  btnConnect.classList.add('d-none')
   btnAnswer.classList.remove('d-none')
   btnReject.classList.remove('d-none')
   callConsole.classList.add('ringing')
@@ -557,30 +557,37 @@ function updateUIConnected() {
 window.__avaliable = false
 
 window.toggleAvaliable = async () => {
-  window.__avaliable = ! window.__avaliable
+  window.__avaliable = !window.__avaliable
   const isOn = window.__avaliable
   btnAvaliable.innerText = isOn ? 'get offline' : 'get online'
   btnAvaliable.classList = isOn ? 'btn btn-success' : 'btn btn-warning'
-  if(!window.__client) {
+  if (!window.__client) {
     window.__client = await getClient()
   }
-  
-  if(isOn) {
-    window.__client.online({incomingCallHandlers: {all: __incomingCallNotification}})
+
+  if (isOn) {
+    window.__client.online({
+      incomingCallHandlers: { all: __incomingCallNotification },
+    })
   } else {
     window.__client.offline()
   }
 }
 
 window.__incomingCallNotification = (notification) => {
-  if(!window.__invite || window.__invite.details.callID !== notification.invite.details.callID) {
+  if (
+    !window.__invite ||
+    window.__invite.details.callID !== notification.invite.details.callID
+  ) {
     window.__invite = notification.invite
   }
   updateUIRinging()
 }
 
 window.answer = async () => {
-  const call = await window.__invite.accept({rootElement: document.getElementById('rootElement')})
+  const call = await window.__invite.accept({
+    rootElement: document.getElementById('rootElement'),
+  })
   window.__call = call
   roomObj = call
   window.__call.on('destroy', () => {
@@ -690,7 +697,7 @@ window.unmuteSelf = () => {
 }
 
 window.muteMember = (id) => {
-  roomObj.audioMute({ memberId: id})
+  roomObj.audioMute({ memberId: id })
 }
 
 window.unmuteMember = (id) => {
@@ -709,7 +716,7 @@ window.muteVideoMember = (id) => {
   roomObj.videoMute({ memberId: id })
 }
 
-window.unmuteVideoMember= () => {
+window.unmuteVideoMember = () => {
   roomObj.videoUnmute({ memberId: id })
 }
 
@@ -1136,118 +1143,119 @@ function updateMembersUI() {
   const members = window.__membersData
 
   const createMemberItem = (member) => {
-
     const createChildElement = (options) => {
       const el = document.createElement(options.tag)
-      
+
       Object.entries(options).forEach(([key, value]) => {
-        if(['tag', 'parent'].includes(key)) return
+        if (['tag', 'parent'].includes(key)) return
         el[key] = value
       })
 
-      options.parent.appendChild(el);
+      options.parent.appendChild(el)
 
-      return el;
+      return el
     }
-    
-    const listItem = document.createElement('li')
-    listItem.className = "list-group-item"
 
-    const memberDiv = document.createElement('div');
-    memberDiv.className = 'row p-0';
-    listItem.appendChild(memberDiv);
-    
+    const listItem = document.createElement('li')
+    listItem.className = 'list-group-item'
+
+    const memberDiv = document.createElement('div')
+    memberDiv.className = 'row p-0'
+    listItem.appendChild(memberDiv)
+
     createChildElement({
       tag: 'div',
       textContent: member.type,
       className: 'badge bg-primary me-2',
-      parent: memberDiv
+      parent: memberDiv,
     })
 
     createChildElement({
       tag: 'div',
       textContent: member.id,
-      parent: memberDiv
+      parent: memberDiv,
     })
 
     createChildElement({
       tag: 'div',
       textContent: member.name,
-      parent: memberDiv
+      parent: memberDiv,
     })
 
     createChildElement({
       tag: 'div',
       textContent: `${member.currentPosition}=>${member.requestedPosition}`,
-      parent: memberDiv
+      parent: memberDiv,
     })
 
     createChildElement({
       tag: 'div',
-      textContent:  member.meta ? Object.entries(member.meta).reduce((previous, [key, value])=> {
-        return `${previous},${key}:${value}`
-      }, '') : 'no meta',
-      parent: memberDiv
+      textContent: member.meta
+        ? Object.entries(member.meta).reduce((previous, [key, value]) => {
+            return `${previous},${key}:${value}`
+          }, '')
+        : 'no meta',
+      parent: memberDiv,
     })
 
     createChildElement({
       tag: 'div',
       textContent: `visible:${member.visible}`,
-      parent: memberDiv
+      parent: memberDiv,
     })
 
     createChildElement({
       tag: 'div',
       textContent: `audio muted:${member.audio_muted}`,
-      parent: memberDiv
+      parent: memberDiv,
     })
 
     createChildElement({
       tag: 'div',
       textContent: `video muted:${member.video_muted}`,
-      parent: memberDiv
+      parent: memberDiv,
     })
 
     createChildElement({
       tag: 'div',
       textContent: `deaf:${member.deaf}`,
-      parent: memberDiv
+      parent: memberDiv,
     })
 
     createChildElement({
       tag: 'div',
       textContent: `talking: ${member.talking}`,
-      parent: memberDiv
+      parent: memberDiv,
     })
 
     createChildElement({
       tag: 'div',
       textContent: `handraised: ${member.handraised}`,
-      parent: memberDiv
+      parent: memberDiv,
     })
 
     createChildElement({
       tag: 'div',
       textContent: `input volume: ${member.input_volume}`,
-      parent: memberDiv
+      parent: memberDiv,
     })
 
     createChildElement({
       tag: 'div',
       textContent: `input sensitivity: ${member.input_sensitivity}`,
-      parent: memberDiv
+      parent: memberDiv,
     })
 
     createChildElement({
       tag: 'div',
       textContent: `input volume: ${member.output_volume}`,
-      parent: memberDiv
+      parent: memberDiv,
     })
 
     const actionsDiv = createChildElement({
       tag: 'div',
       className: 'btn-group-vertical btn-group-sm',
-      parent: memberDiv
+      parent: memberDiv,
     })
 
     createChildElement({
@@ -1256,7 +1264,7 @@ function updateMembersUI() {
       textContent: 'mute audio',
       href: '#',
       onclick: () => window.muteMember(member.id),
-      parent: actionsDiv
+      parent: actionsDiv,
     })
     createChildElement({
       tag: 'a',
@@ -1264,7 +1272,7 @@ function updateMembersUI() {
       textContent: 'unmute audio',
       href: '#',
       onclick: () => window.unmuteMember(member.id),
-      parent: actionsDiv
+      parent: actionsDiv,
     })
     createChildElement({
       tag: 'a',
@@ -1272,7 +1280,7 @@ function updateMembersUI() {
       textContent: 'mute video',
       href: '#',
       onclick: () => console.log('### Nothing Executed ###'),
-      parent: actionsDiv
+      parent: actionsDiv,
     })
     createChildElement({
       tag: 'a',
@@ -1280,19 +1288,17 @@ function updateMembersUI() {
       textContent: 'unmute video',
       href: '#',
       onclick: () => console.log('### Nothing Executed ###'),
-      parent: actionsDiv
+      parent: actionsDiv,
     })
 
     memberDiv.appendChild(actionsDiv)
 
     return listItem
-
   }
 
   Object.values(members)
     .map(createMemberItem)
     .forEach((memberCard) => membersDiv.appendChild(memberCard))
-
 }
 
 function updateAddressUI() {
@@ -1429,7 +1435,9 @@ function updateHistoryUI() {
 async function fetchHistories() {
   if (!client) return
   try {
-    const historyData = await client.conversation.getConversations()
+    const historyData = await client.conversation.getConversations({
+      pageSize: 10,
+    })
     window.__historyData = historyData
     subscribeToNewMessages()
   } catch (error) {
@@ -1505,7 +1513,7 @@ async function fetchNextHistories() {
     if (!hasNext) return
     const nextHistory = await nextPage()
     window.__historyData = nextHistory
-    updateAddressUI()
+    updateHistoryUI()
   } catch (error) {
     console.error('Unable to fetch next histories', error)
   }
@@ -1517,7 +1525,7 @@ async function fetchPrevHistories() {
     if (!hasPrev) return
     const prevHistory = await prevPage()
     window.__historyData = prevHistory
-    updateAddressUI()
+    updateHistoryUI()
   } catch (error) {
     console.error('Unable to fetch prev histories', error)
   }
@@ -1628,6 +1636,7 @@ function updateMessageUI() {
   const messageList = msgModalDiv.querySelector('#messageList')
   const loaderListItem = messageList.querySelector('li')
   loaderListItem.classList.add('d-none')
+  messageList.innerHTML = ''
   if (!messages?.length) {
     const noMsglistItem = document.createElement('li')
     noMsglistItem.classList.add('list-group-item')
@@ -1651,11 +1660,13 @@ async function fetchMessages(id) {
   try {
     const messages = await client.conversation.getConversationMessages({
       addressId: id,
+      pageSize: 10,
     })
     window.__messageData = messages
-    updateMessageUI()
   } catch (error) {
     console.error('Unable to fetch messages', error)
+  } finally {
+    updateMessageUI()
   }
 }
 
