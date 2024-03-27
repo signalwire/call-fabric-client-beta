@@ -30,6 +30,18 @@ const FIREBASE_CONFIG = JSON.stringify({
   vapidKey: process.env.FIREBASE_VAPID_KEY,
 })
 
+function getOAuthConfig(req) { return JSON.stringify({
+  authority: "cf-reference", // dummy authority
+  metadata: {
+    issuer: process.env.SIGNALWIRE_FABRIC_API_URL,
+    authorization_endpoint: process.env.OAUTH_AUTH_URI,
+    token_endpoint: process.env.OAUTH_TOKEN_URI,
+  },
+  client_id: process.env.OAUTH_CLIENT_ID,
+  redirect_uri: getCallbackUrl(req),
+  response_type: "code",
+})}
+
 const host = process.env.RELAY_HOST
 const fabricApiUrl = process.env.SIGNALWIRE_FABRIC_API_URL
 
@@ -113,6 +125,7 @@ app.get('/', async (req, res) => {
     fabricApiUrl: fabricApiUrl,
     destination: process.env.DEFAULT_DESTINATION,
     firebaseConfig: FIREBASE_CONFIG,
+    oauthConfig: getOAuthConfig(req)
   })
 })
 

@@ -13,6 +13,19 @@ const {
   createMicrophoneAnalyzer,
 } = SignalWire
 
+const {
+  UserManager, 
+  WebStorageStateStore 
+} = oidc
+
+window.UserManager = new UserManager({..._oauth_config,
+  userStore: new WebStorageStateStore({ store: window.localStorage }),
+})
+
+window.signin = async () => {
+  await window.UserManager.signinRedirect();
+}
+
 const searchInput = document.getElementById('searchInput')
 const searchType = document.getElementById('searchType')
 
@@ -370,6 +383,7 @@ async function getClient() {
         logWsTraffic: true,
       },
       logLevel: 'debug',
+      maxConnectionStateTimeout: 9000 
     })
   }
 
@@ -399,6 +413,7 @@ window.connect = async () => {
   }
 
   try {
+    window._beforeDial = performance.now();
     const call = await client.dial({
       to: document.getElementById('destination').value,
       logLevel: 'debug',
@@ -411,7 +426,9 @@ window.connect = async () => {
     roomObj = call
 
     roomObj.on('media.connected', () => {
+      window._afterMediaConnected = performance.now();
       console.debug('>> media.connected')
+      console.debug(`⏱️⏱️⏱️ From dial() to media.connect: ${window._afterMediaConnected - window._beforeDial}ms ⏱️⏱️⏱️`)
     })
     roomObj.on('media.reconnecting', () => {
       console.debug('>> media.reconnecting')
@@ -420,9 +437,17 @@ window.connect = async () => {
       console.debug('>> media.disconnected')
     })
 
-    roomObj.on('room.started', (params) =>
+    roomObj.on('room.started', (params) => {
       console.debug('>> room.started', params)
-    )
+      window._afterRoomStared = performance.now()
+      console.debug(`⏱️⏱️⏱️ From dial() to room.started: ${window._afterRoomStared - window._beforeDial}ms ⏱️⏱️⏱️`)
+    })
+
+    roomObj.on('room.joined', (params) => {
+      console.debug('>> room.joined', params)
+      window._afterRoomJoined = performance.now()
+      console.debug(`⏱️⏱️⏱️ From dial() to room.joined: ${window._afterRoomJoined - window._beforeDial}ms ⏱️⏱️⏱️`)
+    })
 
     roomObj.on('destroy', () => {
       console.debug('>> destroy')
