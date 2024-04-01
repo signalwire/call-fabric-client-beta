@@ -450,6 +450,18 @@
       </div>
     </div>
     <hr />
+    <div class="row py-3">
+      <div class="col-12">
+        <h4>Execute RPC</h4>
+        <textarea id="rpcBody" class="form-control"></textarea>
+        <div class="py-3 d-flex  flex-row justify-content-center">
+        <button id="btnRPC" class="btn btn-secondary btn-execute" onclick="executeRPC()">execute</button>
+        </div>
+        <h4>Result</h4>
+        <div id="resultRPC" class="card">
+        </div>
+      </div>
+    </div>
   </div>
   <% if (host === 'puc.swire.io') { %>
   <div id="videoDebug"></div>
