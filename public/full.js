@@ -23,7 +23,7 @@ window.UserManager = new UserManager({..._oauth_config,
 })
 
 window.signin = async () => {
-  await window.UserManager.signinRedirect();
+  await window.UserManager.signinRedirect()
 }
 
 const searchInput = document.getElementById('searchInput')
@@ -375,6 +375,7 @@ function restoreUI() {
 }
 
 async function getClient() {
+  const _token = (await window.UserManager.getUser())?.access_token
   if (!client && _token) {
     client = await SWire({
       host: !!_host && _host.trim().length ? _host : undefined,
@@ -383,7 +384,12 @@ async function getClient() {
         logWsTraffic: true,
       },
       logLevel: 'debug',
-      maxConnectionStateTimeout: 9000 
+      maxConnectionStateTimeout: 9000,
+      onRefreshToken: async () => {
+        await window.UserManager.signinSilent()
+        const user =  await window.UserManager.getUser()
+        return user?.access_token
+      }
     })
   }
 
@@ -989,13 +995,52 @@ window.seekForwardPlayback = () => {
     })
 }
 
+const updateUserInfoUI = async (accessToken) => {
+  if(!accessToken) return
+
+  const headers = {Authorization: `Bearer ${accessToken}`}
+  const user = await (await fetch('/userinfo', {headers})).json();
+  userInfo.innerHTML =  `<div class="card-header">User Info</div>
+  <div class="card-body">
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">id: ${user.id}</li>
+      <li class="list-group-item">email: ${user.email}</li>
+      <li class="list-group-item">First Name: ${user.first_name}</li>
+      <li class="list-group-item">Last Name: ${user.last_name}</li>
+      <li class="list-group-item">Display Name: ${user.display_name}</li>
+      <li class="list-group-item">Job Title: ${user.job_title}</li>
+      <li class="list-group-item">Time Zone: ${user.time_zone}</li>
+      <li class="list-group-item">Ccountry: ${user.country}</li>
+      <li class="list-group-item">Region: ${user.region}</li>
+      <li class="list-group-item">Company Name: ${user.company_name}</li>
+    </ul>
+  </div>`
+}
+
 window.ready(async function () {
   console.log('Ready!')
+  const searchParams = new URLSearchParams(location.search)
+  if (searchParams.has('code')) {
+    console.log('signinCallback!')
+    await window.UserManager.signinCallback()
+  } else {
+    try {
+      await window.UserManager.signinSilent()
+    } catch {}
+  }
+
+  const accessToken = (await window.UserManager.getUser())?.access_token
+
+  if(accessToken) {
+    await updateUserInfoUI(accessToken)
+    
+  }
+
   const client = await getClient()
   if (client) {
     await client.connect()
   }
-  const searchParams = new URLSearchParams(location.search)
+  
   console.log('Handle inbound?', searchParams.has('inbound'))
   if (searchParams.has('inbound')) {
     await enablePushNotifications()
