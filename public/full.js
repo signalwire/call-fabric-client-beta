@@ -1604,26 +1604,26 @@ async function openMessageModal(data) {
     if (data.channels.audio) {
       const audioBtn = contactBtnDiv.querySelector('.btn-dial-audio')
       audioBtn.classList.remove('d-none')
-      audioBtn.addEventListener('click', () => {
+      audioBtn.onclick = () => {
         dialAddress(data.channels.audio)
         modal.hide()
-      })
+      }
     }
     if (data.channels.video) {
       const videoBtn = contactBtnDiv.querySelector('.btn-dial-video')
       videoBtn.classList.remove('d-none')
-      videoBtn.addEventListener('click', () => {
+      videoBtn.onclick = () => {
         dialAddress(data.channels.video)
         modal.hide()
-      })
+      }
     }
     if (data.channels.messaging) {
       const messagingBtn = contactBtnDiv.querySelector('.btn-dial-messaging')
       messagingBtn.classList.remove('d-none')
-      messagingBtn.addEventListener('click', () => {
+      messagingBtn.onclick = () => {
         dialAddress(data.channels.messaging)
         modal.hide()
-      })
+      }
     }
   }
 
