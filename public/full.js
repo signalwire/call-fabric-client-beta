@@ -604,7 +604,9 @@ window.simulate_no_packets = () => {
   window.__call._closeWSConnection();
 }
 
-window.
+window.simulate_socket_error = () => {
+  window.__client.__wsClient.wsClient.store.dispatch({type: "session.forceClose"})
+}
 
 window.reject = async () => {
   await window.__invite.reject()
