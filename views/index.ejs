@@ -10,6 +10,9 @@
   <script type="text/javascript" src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
   <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
 
+  <!-- OpenId Client for OAuth support -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/oidc-client-ts/3.0.1/browser/oidc-client-ts.min.js" integrity="sha512-dbp16seDDFaTwxhmIRipIY43lyMA70TDsc0zBODkVoM2LmD+UI8ndMbW8Qospq5+st97jIiaGCg2/vl0lBDBqQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
   <!-- To style up the demo a little -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
     integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
@@ -29,7 +32,7 @@
           <a class="nav-link" href="/minimal">Minimal</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="/oauth">Subscriber OAuth</a>
+          <a class="nav-link" href="#" onclick="signin()">Subscriber OAuth</a>
         </li>
         <li class="nav-item">
           <a class="nav-link" href="/subscriber">Subscriber Signin/Signup</a>
@@ -49,9 +52,9 @@
     <div class="row py-3">
       <!-- Connect options -->
       <div class="col-12 col-md-4">
-        <% if (user) { %>
-          <div id="user-info" class="card">
-            <div class="card-header">User Info</div>
+          <div id="userInfo" class="card">
+            <% if (user) { %>
+              <div class="card-header">User Info</div>
             <div class="card-body">
               <ul class="list-group list-group-flush">
                 <li class="list-group-item">id: <%= user.id %></li>
@@ -66,8 +69,9 @@
                 <li class="list-group-item">Company Name: <%= user.company_name %></li>
               </ul>
             </div>
+            <% } %>  
+
           </div>
-        <% } %>
 
         <div id="callConsole" class="card">
           <div class="card-body">
@@ -537,6 +541,7 @@
     const _host = "<%= host %>";
     const _fabricApiUrl = "<%= fabricApiUrl %>";
     const _firebaseConfig = <%- firebaseConfig %>;
+    const _oauth_config = <%- oauthConfig %>;
   </script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
   <script type="text/javascript" src="https://unpkg.com/@signalwire/js@dev"></script>

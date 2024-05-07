@@ -30,6 +30,18 @@ const FIREBASE_CONFIG = JSON.stringify({
   vapidKey: process.env.FIREBASE_VAPID_KEY,
 })
 
+function getOAuthConfig(req) { return JSON.stringify({
+  authority: "cf-reference", // dummy authority
+  metadata: {
+    issuer: process.env.SIGNALWIRE_FABRIC_API_URL,
+    authorization_endpoint: process.env.OAUTH_AUTH_URI,
+    token_endpoint: process.env.OAUTH_TOKEN_URI,
+  },
+  client_id: process.env.OAUTH_CLIENT_ID,
+  redirect_uri: getCallbackUrl(req),
+  response_type: "code",
+})}
+
 const host = process.env.RELAY_HOST
 const fabricApiUrl = process.env.SIGNALWIRE_FABRIC_API_URL
 
@@ -99,7 +111,7 @@ async function getSubscriberToken(reference, password) {
 }
 
 app.get('/', async (req, res) => {
-  let token
+let token
   let user
   if (req.session && req.session.token) {
     token = req.session.token
@@ -108,11 +120,12 @@ app.get('/', async (req, res) => {
 
   res.render('index', {
     host,
-    token: token,
+token: token,
     user: user,
     fabricApiUrl: fabricApiUrl,
     destination: process.env.DEFAULT_DESTINATION,
     firebaseConfig: FIREBASE_CONFIG,
+    oauthConfig: getOAuthConfig(req)
   })
 })
 
@@ -131,46 +144,32 @@ app.get('/minimal', async (req, res) => {
   })
 })
 
-app.get('/oauth', (req, res) => {
-  console.log('oauth: begin initiation')
-
-  const authEndpoint = process.env.OAUTH_AUTH_URI
-  const verifier = base64url(crypto.pseudoRandomBytes(32))
-  req.session.verifier = verifier
-  const challenge = base64url(
-    crypto.createHash('sha256').update(verifier).digest()
-  )
-  const currentHost = `${req.protocol}://${req.get('host')}`
-
-  const queryParams = new URLSearchParams({
-    response_type: 'code',
-    client_id: process.env.OAUTH_CLIENT_ID,
-    redirect_uri: getCallbackUrl(req),
-    code_challenge: challenge,
-    code_challenge_method: 'S256',
-  })
-
-  const authorizationUri = `${authEndpoint}?${queryParams}`
-
-  res.redirect(authorizationUri)
-})
-
 app.get('/callback', async (req, res) => {
   console.log('oauth: process callback')
-  const callbackUrl = getCallbackUrl(req)
 
-  try {
-    const tokenData = await getAccessToken(req.query.code, req.session.verifier, callbackUrl)
-    const token = tokenData.access_token
-    req.session.token = token
+  res.render('index', {
+    host,
+    token: null,
+    user: null,
+    fabricApiUrl: fabricApiUrl,
+    destination: process.env.DEFAULT_DESTINATION,
+    firebaseConfig: FIREBASE_CONFIG,
+    oauthConfig: getOAuthConfig(req),
+  })
+})
 
-    const userInfo = await getUserInfo(token)
-    req.session.user = userInfo
+app.get('/userinfo', async (req, res) => {
+  const accessToken = req.headers['authorization'].split(' ')[1];
+  
 
-    res.redirect('/')
-  } catch (error) {
-    console.error(error)
+  if(!accessToken || !accessToken.length) {
+    res.sendStatus(401)
   }
+  req.session.token = accessToken
+  const userInfo = await getUserInfo(accessToken)
+  req.session.user = userInfo
+
+  res.json(userInfo)
 })
 
 app.get('/subscriber', (req, res) => {
