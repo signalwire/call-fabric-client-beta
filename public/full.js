@@ -356,7 +356,7 @@ function restoreUI() {
   inCallElements.forEach((button) => {
     button.classList.add('d-none')
     button.disabled = true
-  })
+  }) 
   window.__membersData = {}
   updateMembersUI()
 }
@@ -374,6 +374,125 @@ async function getClient() {
   }
 
   return client
+}
+
+const setupCallListeners = (callObj) => {
+  callObj.on('media.connected', () => {
+    console.debug('>> media.connected')
+  })
+  callObj.on('media.reconnecting', () => {
+    console.debug('>> media.reconnecting')
+  })
+  callObj.on('media.disconnected', () => {
+    console.debug('>> media.disconnected')
+  })
+
+  callObj.on('room.started', (params) =>
+    console.debug('>> room.started', params)
+  )
+
+  callObj.on('call.started', (params) =>
+    console.debug('>> call.started', params)
+  )
+
+  callObj.on('room.subscribed', (params) => {
+    console.debug('>> room.subscribed', params)
+
+    console.debug('setting up call reattach')
+    saveInSessionStorage({target: {id: 'reattach.enabled', value: true}})
+  })
+  
+
+  callObj.on('destroy', () => {
+    console.debug('>> destroy')
+    saveInSessionStorage({target: {id: 'reattach.params', value: null}})
+    saveInSessionStorage({target: {id: 'reattach.enabled', value: false}})
+    restoreUI()
+  })
+  callObj.on('room.updated', (params) =>
+    console.debug('>> room.updated', params)
+  )
+
+  callObj.on('recording.started', (params) => {
+    console.debug('>> recording.started', params)
+    document.getElementById('recordingState').innerText = 'recording'
+  })
+  callObj.on('recording.ended', (params) => {
+    console.debug('>> recording.ended', params)
+    document.getElementById('recordingState').innerText = 'completed'
+  })
+  callObj.on('recording.updated', (params) => {
+    console.debug('>> recording.updated', params)
+    document.getElementById('recordingState').innerText = params.state
+  })
+  callObj.on('room.ended', (params) => {
+    console.debug('>> room.ended', params)
+    hangup()
+  })
+  callObj.on('member.joined', (params) => {
+    const { member } = params
+    console.debug('>> member.joined', member)
+    window.__membersData = window.__membersData || {}
+    window.__membersData[member.id] = member
+    updateMembersUI()
+  })
+  callObj.on('member.updated', (params) => {
+    const { member } = params
+    console.debug('>> member.updated', member)
+    window.__membersData = window.__membersData || {}
+    window.__membersData[member.id] = member
+    updateMembersUI()
+  })
+  callObj.on('member.talking', (params) =>
+    console.debug('>> member.talking', params)
+  )
+
+  callObj.on('member.updated.audio_muted', (params) =>
+    console.debug('>> member.updated.audio_muted', params)
+  )
+  callObj.on('member.updated.video_muted', (params) =>
+    console.debug('>> member.updated.video_muted', params)
+  )
+
+  callObj.on('member.updated.audioMuted', (params) =>
+  console.debug('>> member.updated.audioMuted', params)
+  )
+  callObj.on('member.updated.videoMuted', (params) =>
+  console.debug('>> member.updated.videoMuted', params)
+  )
+  
+  callObj.on('member.left', (params) => {
+    const { member } = params
+    console.debug('>> member.left', member)
+    if (window.__membersData[member.member_id]) {
+      delete window.__membersData[member.member_id]
+    }
+  })
+  callObj.on('member.talking', (params) =>
+    console.debug('>> member.talking', params)
+  )
+  callObj.on('layout.changed', (params) =>
+    console.debug('>> layout.changed', params)
+  )
+  callObj.on('track', (event) => console.debug('>> DEMO track', event))
+
+  callObj.on('playback.started', (params) => {
+    console.debug('>> playback.started', params)
+
+    playbackStarted()
+  })
+  callObj.on('playback.ended', (params) => {
+    console.debug('>> playback.ended', params)
+
+    playbackEnded()
+  })
+  callObj.on('playback.updated', (params) => {
+    console.debug('>> playback.updated', params)
+
+    if (params.volume) {
+      document.getElementById('playbackVolume').value = params.volume
+    }
+  })
 }
 
 /**
@@ -399,119 +518,23 @@ window.connect = async () => {
   }
 
   try {
-    const call = await client.dial({
+    const params = {
       to: document.getElementById('destination').value,
       logLevel: 'debug',
       debug: { logWsTraffic: true },
       nodeId: steeringId(),
+    }
+
+    saveInSessionStorage({target: {id: 'reattach.params', value: JSON.stringify(params)}})
+    const call = await client.dial({
+      ...params,
       rootElement: document.getElementById('rootElement'),
     })
 
     window.__call = call
     roomObj = call
-
-    roomObj.on('media.connected', () => {
-      console.debug('>> media.connected')
-    })
-    roomObj.on('media.reconnecting', () => {
-      console.debug('>> media.reconnecting')
-    })
-    roomObj.on('media.disconnected', () => {
-      console.debug('>> media.disconnected')
-    })
-
-    roomObj.on('room.started', (params) =>
-      console.debug('>> room.started', params)
-    )
-
-    roomObj.on('destroy', () => {
-      console.debug('>> destroy')
-      restoreUI()
-    })
-    roomObj.on('room.updated', (params) =>
-      console.debug('>> room.updated', params)
-    )
-
-    roomObj.on('recording.started', (params) => {
-      console.debug('>> recording.started', params)
-      document.getElementById('recordingState').innerText = 'recording'
-    })
-    roomObj.on('recording.ended', (params) => {
-      console.debug('>> recording.ended', params)
-      document.getElementById('recordingState').innerText = 'completed'
-    })
-    roomObj.on('recording.updated', (params) => {
-      console.debug('>> recording.updated', params)
-      document.getElementById('recordingState').innerText = params.state
-    })
-    roomObj.on('room.ended', (params) => {
-      console.debug('>> room.ended', params)
-      hangup()
-    })
-    roomObj.on('member.joined', (params) => {
-      const { member } = params
-      console.debug('>> member.joined', member)
-      window.__membersData = window.__membersData || {}
-      window.__membersData[member.id] = member
-      updateMembersUI()
-    })
-    roomObj.on('member.updated', (params) => {
-      const { member } = params
-      console.debug('>> member.updated', member)
-      window.__membersData = window.__membersData || {}
-      window.__membersData[member.id] = member
-      updateMembersUI()
-    })
-    roomObj.on('member.talking', (params) =>
-      console.debug('>> member.talking', params)
-    )
-
-    roomObj.on('member.updated.audio_muted', (params) =>
-      console.debug('>> member.updated.audio_muted', params)
-    )
-    roomObj.on('member.updated.video_muted', (params) =>
-      console.debug('>> member.updated.video_muted', params)
-    )
-
-    roomObj.on('member.updated.audioMuted', (params) =>
-    console.debug('>> member.updated.audioMuted', params)
-    )
-    roomObj.on('member.updated.videoMuted', (params) =>
-    console.debug('>> member.updated.videoMuted', params)
-    )
+    setupCallListeners(call)
     
-    roomObj.on('member.left', (params) => {
-      const { member } = params
-      console.debug('>> member.left', member)
-      if (window.__membersData[member.member_id]) {
-        delete window.__membersData[member.member_id]
-      }
-    })
-    roomObj.on('member.talking', (params) =>
-      console.debug('>> member.talking', params)
-    )
-    roomObj.on('layout.changed', (params) =>
-      console.debug('>> layout.changed', params)
-    )
-    roomObj.on('track', (event) => console.debug('>> DEMO track', event))
-
-    roomObj.on('playback.started', (params) => {
-      console.debug('>> playback.started', params)
-
-      playbackStarted()
-    })
-    roomObj.on('playback.ended', (params) => {
-      console.debug('>> playback.ended', params)
-
-      playbackEnded()
-    })
-    roomObj.on('playback.updated', (params) => {
-      console.debug('>> playback.updated', params)
-
-      if (params.volume) {
-        document.getElementById('playbackVolume').value = params.volume
-      }
-    })
     await call.start()
 
     console.debug('Call Obj', call)
@@ -625,6 +648,18 @@ window.hangup = () => {
 window.saveInLocalStorage = (e) => {
   const key = e.target.name || e.target.id
   localStorage.setItem('fabric.ws.' + key, e.target.value)
+}
+
+window.saveInSessionStorage = (e) => {
+  const key = e.target.name || e.target.id
+  if(!sessionStorage) return
+
+  sessionStorage.setItem('fabric.ws.' + key, e.target.value)
+}
+
+window.getFromSessionStorage = (key) => {
+  if(!sessionStorage) return 
+  return sessionStorage.getItem(key)
 }
 
 // jQuery document.ready equivalent
@@ -982,7 +1017,20 @@ window.ready(async function () {
   if (searchParams.has('inbound')) {
     await enablePushNotifications()
   }
-  Promise.all([fetchHistories(), fetchAddresses()])
+  if(JSON.parse(getFromSessionStorage('fabric.ws.reattach.enabled'))) {
+    const params = JSON.parse(getFromSessionStorage('fabric.ws.reattach.params') || '{}')
+
+    const call = await client.reattach({
+      ...params,
+      rootElement: document.getElementById('rootElement')
+    })
+    
+    window.__call = call
+    setupCallListeners(call)
+    await call.join()
+  } else {
+    Promise.all([fetchHistories(), fetchAddresses()])
+  }
 })
 
 const escapeHTML = (str) => {
