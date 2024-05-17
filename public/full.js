@@ -15,6 +15,8 @@ const {
 
 const searchInput = document.getElementById('searchInput')
 const searchType = document.getElementById('searchType')
+const conversationMessageInput = document.getElementById('new-conversation-message')
+const sendMessageBtn = document.getElementById('send-message')
 
 window.getMicrophoneDevices = getMicrophoneDevices
 window.getCameraDevices = getCameraDevices
@@ -375,6 +377,17 @@ async function getClient() {
 
   return client
 }
+
+sendMessageBtn.addEventListener('click', async () => {
+  if (!client) return
+  const address = window.__currentAddress
+  const text = conversationMessageInput.value
+  await client.conversation.sendMessage({
+    addressId: address.id,
+    text,
+  })
+  conversationMessageInput.value = ''
+})
 
 /**
  * Connect with Relay creating a client and attaching all the event handler.
@@ -1112,16 +1125,16 @@ const createAddressListItem = (address) => {
   Object.entries(address.channels).forEach(([channelName, channelValue]) => {
     const button = document.createElement('button')
     button.className = 'btn btn-sm btn-success'
-
-    button.addEventListener('click', () => dialAddress(channelValue))
-
     const icon = document.createElement('i')
     if (channelName === 'messaging') {
       icon.className = 'bi bi-chat'
+      button.addEventListener('click', () => openMessageModal(address))
     } else if (channelName === 'video') {
       icon.className = 'bi bi-camera-video'
+      button.addEventListener('click', () => dialAddress(channelValue))
     } else if (channelName === 'audio') {
       icon.className = 'bi bi-phone'
+      button.addEventListener('click', () => dialAddress(channelValue))
     }
     button.appendChild(icon)
 
@@ -1542,9 +1555,10 @@ function createMessageListItem(msg) {
   listItem.innerHTML = `
     <div class="d-flex flex-column">
       <div class="d-flex justify-content-between align-items-center">
-        <h6 class="mb-0 text-capitalize">${msg.type ?? 'unknown'}</h6>
+        <h6 class="mb-0 text-capitalize">${msg.text ?? 'unknown'}</h6>
         <div class="d-flex align-items-center gap-1">
-          <span class="badge bg-info">${msg.subtype ?? 'unknown'}</span>
+          <span class="badge bg-info">${msg.type ?? 'unknown'}</span>
+          <span class="badge bg-warning">${msg.subtype ?? 'unknown'}</span>
           <span class="badge bg-success">${msg.kind ?? 'unknown'}</span>
         </div>
       </div>
@@ -1559,6 +1573,7 @@ const msgModalDiv = document.getElementById('messageModal')
 msgModalDiv.addEventListener('hidden.bs.modal', clearMessageModal)
 
 function clearMessageModal() {
+  window.__currentAddress = null
   window.__messageData = null
   const titleH2 = msgModalDiv.querySelector('.title')
   const typeBadgeSpan = msgModalDiv.querySelector('.type-badge')
@@ -1586,6 +1601,7 @@ function clearMessageModal() {
 }
 
 async function openMessageModal(data) {
+  window.__currentAddress = data
   const modal = new bootstrap.Modal(msgModalDiv)
   modal.show()
 
@@ -1663,6 +1679,7 @@ async function fetchMessages(id) {
       pageSize: 10,
     })
     window.__messageData = messages
+    subscribeToNewMessages()
   } catch (error) {
     console.error('Unable to fetch messages', error)
   } finally {
