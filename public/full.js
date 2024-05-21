@@ -365,6 +365,8 @@ async function getClient() {
       host: !!_host && _host.trim().length ? _host : undefined,
       token: _token,
       rootElement: document.getElementById('rootElement'),
+      logLevel: 'debug',
+      debug: { logWsTraffic: true },
     })
   }
 
