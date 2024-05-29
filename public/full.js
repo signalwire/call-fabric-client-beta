@@ -397,6 +397,9 @@ window.connect = async () => {
     console.error('Auth required!')
     return
   }
+
+  btnConnect.classList.add('d-none')
+  btnDisconnect.classList.remove('d-none')
   window.__membersData = {}
 
   const client = await getClient()
