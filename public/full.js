@@ -395,6 +395,17 @@ const setupCallListeners = (callObj) => {
     console.debug('>> call.started', params)
   )
 
+  callObj.on('call.joined', (params) => {
+    console.debug('>> call.joined ', params)
+    window.__membersData = window.__membersData || {}
+    
+    //we create a scope for this call/segment 
+    window.__membersData[params.room_session_id] = {}
+    params.room_session.members
+    .forEach((memberData) => window.__membersData[params.room_session_id][memberData.member_id] = memberData)
+    updateMembersUI(params.room_session_id)
+  })
+
   callObj.on('room.subscribed', (params) => {
     console.debug('>> room.subscribed', params)
 
@@ -432,20 +443,30 @@ const setupCallListeners = (callObj) => {
   callObj.on('member.joined', (params) => {
     const { member } = params
     console.debug('>> member.joined', member)
-    window.__membersData = window.__membersData || {}
-    window.__membersData[member.id] = member
-    updateMembersUI()
+    if(window.__membersData[member.room_session_id]) {
+      window.__membersData[member.room_session_id][member.member_id] = member
+    }
+    updateMembersUI(member.room_session_id)
   })
   callObj.on('member.updated', (params) => {
     const { member } = params
     console.debug('>> member.updated', member)
-    window.__membersData = window.__membersData || {}
-    window.__membersData[member.id] = member
-    updateMembersUI()
+    if(window.__membersData[member.room_session_id]) {
+      window.__membersData[member.room_session_id][member.member_id] = member
+    }
+    updateMembersUI(member.room_session_id)
   })
-  callObj.on('member.talking', (params) =>
+  callObj.on('member.talking', (params) => {
     console.debug('>> member.talking', params)
-  )
+    const { member } = params
+    if (window.__membersData[member.room_session_id]) {
+      window.__membersData[member.room_session_id][member.member_id] = {
+        ...window.__membersData[member.room_session_id][member.member_id],
+        ...member
+      }
+    }
+    updateMembersUI(member.room_session_id)
+})
 
   callObj.on('member.updated.audio_muted', (params) =>
     console.debug('>> member.updated.audio_muted', params)
@@ -1192,11 +1213,12 @@ const createAddressListItem = (address) => {
   return listItem
 }
 
-function updateMembersUI() {
+function updateMembersUI(callID) {
+  console.log(`####### update members ui for ${callID}`)
   const membersDiv = document.getElementById('members')
   membersDiv.innerHTML = ''
-  const members = window.__membersData
-
+  const members = !callID ? {} : window.__membersData[callID]
+  console.log(`####### update members ui for ${callID}`, members)
   const createMemberItem = (member) => {
     const createChildElement = (options) => {
       const el = document.createElement(options.tag)
@@ -1318,7 +1340,7 @@ function updateMembersUI() {
       className: 'btn btn-warning',
       textContent: 'mute audio',
       href: '#',
-      onclick: () => window.muteMember(member.id),
+      onclick: () => window.muteMember(member.member_id),
       parent: actionsDiv,
     })
     createChildElement({
@@ -1326,7 +1348,7 @@ function updateMembersUI() {
       className: 'btn btn-warning',
       textContent: 'unmute audio',
       href: '#',
-      onclick: () => window.unmuteMember(member.id),
+      onclick: () => window.unmuteMember(member.member_id),
       parent: actionsDiv,
     })
     createChildElement({
