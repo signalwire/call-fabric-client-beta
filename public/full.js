@@ -1047,6 +1047,7 @@ window.ready(async function () {
     })
     
     window.__call = call
+    roomObj = call
     setupCallListeners(call)
     await call.join()
 
