@@ -1049,6 +1049,8 @@ window.ready(async function () {
     window.__call = call
     setupCallListeners(call)
     await call.join()
+
+    updateUIConnected()
   } else {
     Promise.all([fetchHistories(), fetchAddresses()])
   }
