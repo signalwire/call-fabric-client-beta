@@ -505,14 +505,14 @@ window.connect = async () => {
       const { member } = params
       console.debug('>> member.joined', member)
       window.__membersData = window.__membersData || {}
-      window.__membersData[member.id] = member
+      window.__membersData[member.member_id] = member
       updateMembersUI()
     })
     roomObj.on('member.updated', (params) => {
       const { member } = params
       console.debug('>> member.updated', member)
       window.__membersData = window.__membersData || {}
-      window.__membersData[member.id] = member
+      window.__membersData[member.member_id] = member
       updateMembersUI()
     })
     roomObj.on('member.talking', (params) =>
