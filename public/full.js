@@ -37,6 +37,8 @@ const inCallElements = [
   unmuteSelfBtn,
   muteVideoSelfBtn,
   unmuteVideoSelfBtn,
+  lockCallBtn,
+  unlockCallBtn,
   deafSelfBtn,
   undeafSelfBtn,
   controlSliders,
@@ -798,6 +800,14 @@ window.muteVideoSelf = () => {
 
 window.unmuteVideoSelf = () => {
   roomObj.videoUnmute()
+}
+
+window.lockCall = () => {
+  roomObj.lock()
+}
+
+window.unlockCall = () => {
+  roomObj.unlock()
 }
 
 window.deafSelf = () => {
