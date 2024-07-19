@@ -15,7 +15,9 @@ const {
 
 const searchInput = document.getElementById('searchInput')
 const searchType = document.getElementById('searchType')
-const conversationMessageInput = document.getElementById('new-conversation-message')
+const conversationMessageInput = document.getElementById(
+  'new-conversation-message'
+)
 const sendMessageBtn = document.getElementById('send-message')
 
 window.getMicrophoneDevices = getMicrophoneDevices
@@ -41,6 +43,8 @@ const inCallElements = [
   unlockCallBtn,
   deafSelfBtn,
   undeafSelfBtn,
+  lockRoomBtn,
+  unlockRoomBtn,
   controlSliders,
   controlLayout,
   hideVMutedBtn,
@@ -373,7 +377,7 @@ async function getClient() {
       debug: {
         logWsTraffic: true,
       },
-      logLevel: 'debug'
+      logLevel: 'debug',
     })
   }
 
@@ -417,7 +421,7 @@ window.connect = async () => {
   }
 
   try {
-    window._beforeDial = performance.now();
+    window._beforeDial = performance.now()
     const call = await client.dial({
       to: document.getElementById('destination').value,
       logLevel: 'debug',
@@ -430,9 +434,13 @@ window.connect = async () => {
     roomObj = call
 
     roomObj.on('media.connected', () => {
-      window._afterMediaConnected = performance.now();
+      window._afterMediaConnected = performance.now()
       console.debug('>> media.connected')
-      console.debug(`⏱️⏱️⏱️ From dial() to media.connect: ${window._afterMediaConnected - window._beforeDial}ms ⏱️⏱️⏱️`)
+      console.debug(
+        `⏱️⏱️⏱️ From dial() to media.connect: ${
+          window._afterMediaConnected - window._beforeDial
+        }ms ⏱️⏱️⏱️`
+      )
     })
 
     roomObj.on('media.reconnecting', () => {
@@ -441,44 +449,68 @@ window.connect = async () => {
     roomObj.on('media.disconnected', () => {
       console.debug('>> media.disconnected')
     })
-    
+
     roomObj.on('room.started', (params) => {
       console.debug('>> room.started', params)
       window._afterRoomStared = performance.now()
-      console.debug(`⏱️⏱️⏱️ From dial() to room.started: ${window._afterRoomStared - window._beforeDial}ms ⏱️⏱️⏱️`)
+      console.debug(
+        `⏱️⏱️⏱️ From dial() to room.started: ${
+          window._afterRoomStared - window._beforeDial
+        }ms ⏱️⏱️⏱️`
+      )
     })
 
     roomObj.on('room.joined', (params) => {
       console.debug('>> room.joined', params)
       window._afterRoomJoined = performance.now()
-      console.debug(`⏱️⏱️⏱️ From dial() to room.joined: ${window._afterRoomJoined - window._beforeDial}ms ⏱️⏱️⏱️`)
+      console.debug(
+        `⏱️⏱️⏱️ From dial() to room.joined: ${
+          window._afterRoomJoined - window._beforeDial
+        }ms ⏱️⏱️⏱️`
+      )
       updateUIConnected()
     })
 
     roomObj.on('icegathering.new', (params) => {
       console.debug('>> icegathering.new', params)
       window._icegatheringNew = performance.now()
-      console.debug(`⏱️⏱️⏱️ From dial() to icegathering.new: ${window._icegatheringNew - window._beforeDial}ms ⏱️⏱️⏱️`)
+      console.debug(
+        `⏱️⏱️⏱️ From dial() to icegathering.new: ${
+          window._icegatheringNew - window._beforeDial
+        }ms ⏱️⏱️⏱️`
+      )
     })
 
     roomObj.on('icegathering.new', (params) => {
       console.debug('>> icegathering.new', params)
       window._icegatheringNew = performance.now()
-      console.debug(`⏱️⏱️⏱️ From dial() to icegathering.new: ${window._icegatheringNew - window._beforeDial}ms ⏱️⏱️⏱️`)
+      console.debug(
+        `⏱️⏱️⏱️ From dial() to icegathering.new: ${
+          window._icegatheringNew - window._beforeDial
+        }ms ⏱️⏱️⏱️`
+      )
     })
 
     roomObj.on('icegathering.gathering', (params) => {
       console.debug('>> icegathering.gathering', params)
       window._icegatheringGathering = performance.now()
-      console.debug(`⏱️⏱️⏱️ From dial() to icegathering.gathering: ${window._icegatheringGathering - window._beforeDial}ms ⏱️⏱️⏱️`)
+      console.debug(
+        `⏱️⏱️⏱️ From dial() to icegathering.gathering: ${
+          window._icegatheringGathering - window._beforeDial
+        }ms ⏱️⏱️⏱️`
+      )
     })
 
     roomObj.on('icegathering.complete', (params) => {
       console.debug('>> icegathering.complete', params)
       window._icegatheringComplete = performance.now()
-      console.debug(`⏱️⏱️⏱️ From dial() to icegathering.complete: ${window._icegatheringComplete - window._beforeDial}ms ⏱️⏱️⏱️`)
+      console.debug(
+        `⏱️⏱️⏱️ From dial() to icegathering.complete: ${
+          window._icegatheringComplete - window._beforeDial
+        }ms ⏱️⏱️⏱️`
+      )
     })
-    
+
     roomObj.on('destroy', () => {
       console.debug('>> destroy')
       restoreUI()
@@ -612,10 +644,10 @@ function updateUIConnected() {
 window.__avaliable = false
 
 window.executeRPC = async () => {
-  resultRPC.innerText = '';
-  const params = JSON.parse(rpcBody.value);
-  const result = await window.__client.__wsClient.wsClient.execute(params);
-  resultRPC.innerText = JSON.stringify(result, null, 2);
+  resultRPC.innerText = ''
+  const params = JSON.parse(rpcBody.value)
+  const result = await window.__client.__wsClient.wsClient.execute(params)
+  resultRPC.innerText = JSON.stringify(result, null, 2)
 }
 
 window.toggleAvaliable = async () => {
@@ -663,11 +695,13 @@ window.answer = async () => {
  */
 
 window.simulate_no_packets = () => {
-  window.__call._closeWSConnection();
+  window.__call._closeWSConnection()
 }
 
 window.simulate_socket_error = () => {
-  window.__client.__wsClient.wsClient.store.dispatch({type: "session.forceClose"})
+  window.__client.__wsClient.wsClient.store.dispatch({
+    type: 'session.forceClose',
+  })
 }
 
 window.reject = async () => {
@@ -818,12 +852,12 @@ window.undeafSelf = () => {
   roomObj.undeaf()
 }
 
-window.hideVideoMuted = () => {
-  roomObj.hideVideoMuted()
+window.lockRoom = () => {
+  roomObj.lock()
 }
 
-window.showVideoMuted = () => {
-  roomObj.showVideoMuted()
+window.unlockRoom = () => {
+  roomObj.unlock()
 }
 
 window.changeLayout = (select) => {
