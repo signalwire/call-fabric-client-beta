@@ -351,6 +351,8 @@ const initializeMicAnalyzer = async (stream) => {
 function restoreUI() {
   btnConnect.classList.remove('d-none')
   btnDisconnect.classList.add('d-none')
+  btnDisconnectMedia.classList.add('d-none')
+  btnDisconnectWS.classList.add('d-none')
   btnAnswer.classList.add('d-none')
   btnReject.classList.add('d-none')
   tabs.classList.remove('d-none')
@@ -600,6 +602,8 @@ function updateUIConnected() {
   btnReject.classList.add('d-none')
   tabs.classList.add('d-none')
   btnDisconnect.classList.remove('d-none')
+  btnDisconnectMedia.classList.remove('d-none')
+  btnDisconnectWS.classList.remove('d-none')
   callConsole.classList.remove('ringing')
   connectStatus.innerHTML = 'Connected'
 
