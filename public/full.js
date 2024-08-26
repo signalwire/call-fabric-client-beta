@@ -15,6 +15,8 @@ const {
 
 const searchInput = document.getElementById('searchInput')
 const searchType = document.getElementById('searchType')
+const conversationMessageInput = document.getElementById('new-conversation-message')
+const sendMessageBtn = document.getElementById('send-message')
 
 window.getMicrophoneDevices = getMicrophoneDevices
 window.getCameraDevices = getCameraDevices
@@ -35,6 +37,8 @@ const inCallElements = [
   unmuteSelfBtn,
   muteVideoSelfBtn,
   unmuteVideoSelfBtn,
+  lockCallBtn,
+  unlockCallBtn,
   deafSelfBtn,
   undeafSelfBtn,
   controlSliders,
@@ -78,6 +82,38 @@ window.playbackEnded = () => {
   })
 }
 
+const parser = new UAParser(window.navigator.userAgent)
+const {
+  ua: userAgent,
+  browser: { name: browserName, version: browserVersion },
+  os: { name: osName, version: osVersion },
+  device: { type: deviceType },
+}= parser.getResult()
+
+window._userVariables = {
+  fullBrowserVersion: browserVersion || '',
+  gmtOffset: (-1.0 * new Date().getTimezoneOffset()) / 60,
+  hostname: window.location.hostname,
+  isAndroid: osName === 'Android',
+  isChrome: browserName === 'Chrome',
+  isChromium: browserName === 'Chromium',
+  isEdge: browserName === 'Edge',
+  isFirefox: browserName === 'Firefox',
+  isIE: browserName === 'IE',
+  isIOS: osName === 'iOS',
+  isMobile: deviceType === 'mobile',
+  isOpera: browserName === 'Opera',
+  isSafari: browserName === 'Safari',
+  isTablet: deviceType === 'tablet',
+  isWinPhone: osName === 'Windows Mobile',
+  isYandex: browserName === 'Yandex',
+  osName: osName || '',
+  osVersion: osVersion || '',
+  timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+  tzString: new Date().toTimeString().split(' ').splice(1).join(' '),
+  userAgent: userAgent,
+}
+
 async function enablePushNotifications() {
   btnRegister.disabled = true
 
@@ -90,18 +126,18 @@ async function enablePushNotifications() {
 
   FB.onMessage(messaging, (payload) => {
     console.log('Push payload.data.message', payload.data.message)
-    const message = JSON.parse(payload.data.message);
+    const message = JSON.parse(payload.data.message)
     handlePushNotification(message.notification.body)
     alert(body.title)
   })
 
   try {
-    navigator.serviceWorker.addEventListener('message', event => {
-      console.log(`The service worker sent me a message: ${event.data}`);
+    navigator.serviceWorker.addEventListener('message', (event) => {
+      console.log(`The service worker sent me a message: ${event.data}`)
       const message = JSON.parse(event.data || '{}')
       handlePushNotification(message.notification.body)
       alert(body.title)
-    });
+    })
 
     const registration = await navigator.serviceWorker.register(
       '/service-worker.js',
@@ -142,6 +178,9 @@ async function enablePushNotifications() {
         deviceType: 'Android', // Use Android w/ Firebase on the web
         deviceToken: token,
       })
+      client.online({
+        incomingCallHandlers: { pushNotification: __incomingCallNotification },
+      })
       pnSecretKey = push_notification_key
       console.log('pnSecretKey: ', pnSecretKey)
       btnRegister.classList.add('d-none')
@@ -165,11 +204,7 @@ async function handlePushNotification(pushNotificationPayload) {
 
     switch (resultType) {
       case 'inboundCall':
-        window.__call = resultObject
-        window.__call.on('destroy', () => {
-          console.warn('Inbound Call got cancelled!!')
-        })
-        updateUIRinging()
+        this.logger.info('Inbound Call Push Notification received')
         break
       default:
         this.logger.warn('Unknown resultType', resultType, resultObject)
@@ -348,15 +383,20 @@ const initializeMicAnalyzer = async (stream) => {
 function restoreUI() {
   btnConnect.classList.remove('d-none')
   btnDisconnect.classList.add('d-none')
+  btnDisconnectMedia.classList.add('d-none')
+  btnDisconnectWS.classList.add('d-none')
   btnAnswer.classList.add('d-none')
   btnReject.classList.add('d-none')
   tabs.classList.remove('d-none')
+  callConsole.classList.remove('ringing')
   connectStatus.innerHTML = 'Not Connected'
 
   inCallElements.forEach((button) => {
     button.classList.add('d-none')
     button.disabled = true
   })
+  window.__membersData = {}
+  updateMembersUI()
 }
 
 async function getClient() {
@@ -364,14 +404,26 @@ async function getClient() {
     client = await SWire({
       host: !!_host && _host.trim().length ? _host : undefined,
       token: _token,
-      rootElement: document.getElementById('rootElement'),
-      logLevel: 'debug',
-      debug: { logWsTraffic: true },
+      debug: {
+        logWsTraffic: true,
+      },
+      logLevel: 'debug'
     })
   }
 
   return client
 }
+
+sendMessageBtn.addEventListener('click', async () => {
+  if (!client) return
+  const address = window.__currentAddress
+  const text = conversationMessageInput.value
+  await client.conversation.sendMessage({
+    addressId: address.id,
+    text,
+  })
+  conversationMessageInput.value = ''
+})
 
 /**
  * Connect with Relay creating a client and attaching all the event handler.
@@ -381,6 +433,10 @@ window.connect = async () => {
     console.error('Auth required!')
     return
   }
+
+  btnConnect.classList.add('d-none')
+  btnDisconnect.classList.remove('d-none')
+  window.__membersData = {}
 
   const client = await getClient()
   window.__client = client
@@ -394,113 +450,177 @@ window.connect = async () => {
     return !!formValue && formValue.trim().length ? formValue.trim() : undefined
   }
 
-  const call = await client.dial({
-    to: document.getElementById('destination').value,
-    logLevel: 'debug',
-    debug: { logWsTraffic: true },
-    nodeId: steeringId(),
-  })
+  try {
+    window._beforeDial = performance.now();
+    const call = await client.dial({
+      to: document.getElementById('destination').value,
+      logLevel: 'debug',
+      debug: { logWsTraffic: true },
+      nodeId: steeringId(),
+      rootElement: document.getElementById('rootElement'),
+      userVariables: window._userVariables
+    })
 
-  window.__call = call
-  roomObj = call
+    window.__call = call
+    roomObj = call
 
-  await call.start()
+    roomObj.on('media.connected', () => {
+      window._afterMediaConnected = performance.now();
+      console.debug('>> media.connected')
+      console.debug(`⏱️⏱️⏱️ From dial() to media.connect: ${window._afterMediaConnected - window._beforeDial}ms ⏱️⏱️⏱️`)
+    })
 
-  console.debug('Call Obj', call)
+    roomObj.on('media.reconnecting', () => {
+      console.debug('>> media.reconnecting')
+    })
+    roomObj.on('media.disconnected', () => {
+      console.debug('>> media.disconnected')
+    })
+    
+    roomObj.on('room.started', (params) => {
+      console.debug('>> room.started', params)
+      window._afterRoomStared = performance.now()
+      console.debug(`⏱️⏱️⏱️ From dial() to room.started: ${window._afterRoomStared - window._beforeDial}ms ⏱️⏱️⏱️`)
+    })
 
-  const joinHandler = (params) => {
-    console.debug('>> room.joined', params)
+    roomObj.on('room.joined', (params) => {
+      console.debug('>> room.joined', params)
+      window._afterRoomJoined = performance.now()
+      console.debug(`⏱️⏱️⏱️ From dial() to room.joined: ${window._afterRoomJoined - window._beforeDial}ms ⏱️⏱️⏱️`)
+      updateUIConnected()
+    })
 
-    updateUIConnected()
+    roomObj.on('icegathering.new', (params) => {
+      console.debug('>> icegathering.new', params)
+      window._icegatheringNew = performance.now()
+      console.debug(`⏱️⏱️⏱️ From dial() to icegathering.new: ${window._icegatheringNew - window._beforeDial}ms ⏱️⏱️⏱️`)
+    })
 
-    // loadLayouts()
-  }
-  joinHandler()
+    roomObj.on('icegathering.new', (params) => {
+      console.debug('>> icegathering.new', params)
+      window._icegatheringNew = performance.now()
+      console.debug(`⏱️⏱️⏱️ From dial() to icegathering.new: ${window._icegatheringNew - window._beforeDial}ms ⏱️⏱️⏱️`)
+    })
 
-  roomObj.on('media.connected', () => {
-    console.debug('>> media.connected')
-  })
-  roomObj.on('media.reconnecting', () => {
-    console.debug('>> media.reconnecting')
-  })
-  roomObj.on('media.disconnected', () => {
-    console.debug('>> media.disconnected')
-  })
+    roomObj.on('icegathering.gathering', (params) => {
+      console.debug('>> icegathering.gathering', params)
+      window._icegatheringGathering = performance.now()
+      console.debug(`⏱️⏱️⏱️ From dial() to icegathering.gathering: ${window._icegatheringGathering - window._beforeDial}ms ⏱️⏱️⏱️`)
+    })
 
-  roomObj.on('room.started', (params) =>
-    console.debug('>> room.started', params)
-  )
+    roomObj.on('icegathering.complete', (params) => {
+      console.debug('>> icegathering.complete', params)
+      window._icegatheringComplete = performance.now()
+      console.debug(`⏱️⏱️⏱️ From dial() to icegathering.complete: ${window._icegatheringComplete - window._beforeDial}ms ⏱️⏱️⏱️`)
+    })
+    
+    roomObj.on('destroy', () => {
+      console.debug('>> destroy')
+      restoreUI()
+    })
+    roomObj.on('room.updated', (params) =>
+      console.debug('>> room.updated', params)
+    )
 
-  roomObj.on('destroy', () => {
-    console.debug('>> destroy')
-    restoreUI()
-  })
-  roomObj.on('room.updated', (params) =>
-    console.debug('>> room.updated', params)
-  )
+    roomObj.on('recording.started', (params) => {
+      console.debug('>> recording.started', params)
+      document.getElementById('recordingState').innerText = 'recording'
+    })
+    roomObj.on('recording.ended', (params) => {
+      console.debug('>> recording.ended', params)
+      document.getElementById('recordingState').innerText = 'completed'
+    })
+    roomObj.on('recording.updated', (params) => {
+      console.debug('>> recording.updated', params)
+      document.getElementById('recordingState').innerText = params.state
+    })
+    roomObj.on('room.ended', (params) => {
+      console.debug('>> room.ended', params)
+      hangup()
+    })
+    roomObj.on('member.joined', (params) => {
+      const { member } = params
+      console.debug('>> member.joined', member)
+      window.__membersData = window.__membersData || {}
+      window.__membersData[member.member_id] = member
+      updateMembersUI()
+    })
+    roomObj.on('member.updated', (params) => {
+      const { member } = params
+      console.debug('>> member.updated', member)
+      window.__membersData = window.__membersData || {}
+      window.__membersData[member.member_id] = member
+      updateMembersUI()
+    })
+    roomObj.on('member.talking', (params) =>
+      console.debug('>> member.talking', params)
+    )
 
-  roomObj.on('recording.started', (params) => {
-    console.debug('>> recording.started', params)
-    document.getElementById('recordingState').innerText = 'recording'
-  })
-  roomObj.on('recording.ended', (params) => {
-    console.debug('>> recording.ended', params)
-    document.getElementById('recordingState').innerText = 'completed'
-  })
-  roomObj.on('recording.updated', (params) => {
-    console.debug('>> recording.updated', params)
-    document.getElementById('recordingState').innerText = params.state
-  })
-  roomObj.on('room.ended', (params) => {
-    console.debug('>> room.ended', params)
-    hangup()
-  })
-  roomObj.on('member.joined', (params) =>
-    console.debug('>> member.joined', params)
-  )
-  roomObj.on('member.updated', (params) =>
-    console.debug('>> member.updated', params)
-  )
+    roomObj.on('member.updated.audio_muted', (params) =>
+      console.debug('>> member.updated.audio_muted', params)
+    )
+    roomObj.on('member.updated.video_muted', (params) =>
+      console.debug('>> member.updated.video_muted', params)
+    )
 
-  roomObj.on('member.updated.audio_muted', (params) =>
-    console.debug('>> member.updated.audio_muted', params)
-  )
-  roomObj.on('member.updated.video_muted', (params) =>
-    console.debug('>> member.updated.video_muted', params)
-  )
+    roomObj.on('member.left', (params) => {
+      const { member } = params
+      console.debug('>> member.left', member)
+      if (window.__membersData[member.member_id]) {
+        delete window.__membersData[member.member_id]
+      }
+    })
+    roomObj.on('member.talking', (params) =>
+      console.debug('>> member.talking', params)
+    )
+    roomObj.on('layout.changed', (params) =>
+      console.debug('>> layout.changed', params)
+    )
+    roomObj.on('track', (event) => console.debug('>> DEMO track', event))
 
-  roomObj.on('member.left', (params) => console.debug('>> member.left', params))
-  roomObj.on('member.talking', (params) =>
-    console.debug('>> member.talking', params)
-  )
-  roomObj.on('layout.changed', (params) =>
-    console.debug('>> layout.changed', params)
-  )
-  roomObj.on('track', (event) => console.debug('>> DEMO track', event))
+    roomObj.on('playback.started', (params) => {
+      console.debug('>> playback.started', params)
 
-  roomObj.on('playback.started', (params) => {
-    console.debug('>> playback.started', params)
+      playbackStarted()
+    })
+    roomObj.on('playback.ended', (params) => {
+      console.debug('>> playback.ended', params)
 
-    playbackStarted()
-  })
-  roomObj.on('playback.ended', (params) => {
-    console.debug('>> playback.ended', params)
+      playbackEnded()
+    })
+    roomObj.on('playback.updated', (params) => {
+      console.debug('>> playback.updated', params)
 
-    playbackEnded()
-  })
-  roomObj.on('playback.updated', (params) => {
-    console.debug('>> playback.updated', params)
+      if (params.volume) {
+        document.getElementById('playbackVolume').value = params.volume
+      }
+    })
+    await call.start()
 
-    if (params.volume) {
-      document.getElementById('playbackVolume').value = params.volume
+    console.debug('Call Obj', call)
+
+    const joinHandler = (params) => {
+      console.debug('>> room.joined', params)
+
+      updateUIConnected()
+
+      // loadLayouts()
     }
-  })
+    joinHandler()
+  } catch (e) {
+    alert(
+      `Something went wrong trying to dial ${
+        document.getElementById('destination').value
+      }`
+    )
+  }
 }
 
 function updateUIRinging() {
   btnConnect.classList.add('d-none')
   btnAnswer.classList.remove('d-none')
   btnReject.classList.remove('d-none')
+  callConsole.classList.add('ringing')
   connectStatus.innerHTML = 'Ringing'
 
   inCallElements.forEach((button) => {
@@ -515,6 +635,9 @@ function updateUIConnected() {
   btnReject.classList.add('d-none')
   tabs.classList.add('d-none')
   btnDisconnect.classList.remove('d-none')
+  btnDisconnectMedia.classList.remove('d-none')
+  btnDisconnectWS.classList.remove('d-none')
+  callConsole.classList.remove('ringing')
   connectStatus.innerHTML = 'Connected'
 
   inCallElements.forEach((button) => {
@@ -523,13 +646,69 @@ function updateUIConnected() {
   })
 }
 
+window.__avaliable = false
+
+window.executeRPC = async () => {
+  resultRPC.innerText = '';
+  const params = JSON.parse(rpcBody.value);
+  const result = await window.__client.__wsClient.wsClient.execute(params);
+  resultRPC.innerText = JSON.stringify(result, null, 2);
+}
+
+window.toggleAvaliable = async () => {
+  window.__avaliable = !window.__avaliable
+  const isOn = window.__avaliable
+  btnAvaliable.innerText = isOn ? 'get offline' : 'get online'
+  btnAvaliable.classList = isOn ? 'btn btn-success' : 'btn btn-warning'
+  if (!window.__client) {
+    window.__client = await getClient()
+  }
+
+  if (isOn) {
+    window.__client.online({
+      incomingCallHandlers: { all: __incomingCallNotification },
+    })
+  } else {
+    window.__client.offline()
+  }
+}
+
+window.__incomingCallNotification = (notification) => {
+  if (
+    !window.__invite ||
+    window.__invite.details.callID !== notification.invite.details.callID
+  ) {
+    window.__invite = notification.invite
+  }
+  updateUIRinging()
+}
+
 window.answer = async () => {
-  await window.__call.answer()
+  const call = await window.__invite.accept({
+    rootElement: document.getElementById('rootElement'),
+  })
+  window.__call = call
+  roomObj = call
+  window.__call.on('destroy', () => {
+    console.warn('Inbound Call got cancelled!!')
+  })
   updateUIConnected()
 }
 
+/**
+ * Dev Only
+ */
+
+window.simulate_no_packets = () => {
+  window.__call._closeWSConnection();
+}
+
+window.simulate_socket_error = () => {
+  window.__client.__wsClient.wsClient.store.dispatch({type: "session.forceClose"})
+}
+
 window.reject = async () => {
-  await window.__call.hangup()
+  await window.__invite.reject()
   restoreUI()
 }
 /**
@@ -564,6 +743,14 @@ window.ready = (callback) => {
         callback()
       }
     })
+  }
+  const localSteeringId = document.getElementById('steeringId')
+  localSteeringId.value = localStorage.getItem('fabric.ws.steeringId') || ''
+
+  // Destination is populated through ENV by default
+  const localDestination = localStorage.getItem('fabric.ws.destination')
+  if (localDestination) {
+    document.getElementById('destination').value = localDestination
   }
 }
 
@@ -620,6 +807,14 @@ window.unmuteSelf = () => {
   roomObj.audioUnmute()
 }
 
+window.muteMember = (id) => {
+  roomObj.audioMute({ memberId: id })
+}
+
+window.unmuteMember = (id) => {
+  roomObj.audioUnmute({ memberId: id })
+}
+
 window.muteVideoAll = () => {
   roomObj.videoMute({ memberId: 'all' })
 }
@@ -628,12 +823,28 @@ window.unmuteVideoAll = () => {
   roomObj.videoUnmute({ memberId: 'all' })
 }
 
+window.muteVideoMember = (id) => {
+  roomObj.videoMute({ memberId: id })
+}
+
+window.unmuteVideoMember = () => {
+  roomObj.videoUnmute({ memberId: id })
+}
+
 window.muteVideoSelf = () => {
   roomObj.videoMute()
 }
 
 window.unmuteVideoSelf = () => {
   roomObj.videoUnmute()
+}
+
+window.lockCall = () => {
+  roomObj.lock()
+}
+
+window.unlockCall = () => {
+  roomObj.unlock()
 }
 
 window.deafSelf = () => {
@@ -900,12 +1111,12 @@ function isBlank(str) {
 window.toggleTabState = async (activeButtonName) => {
   const config = [
     {
-      name: 'Directory',
+      name: 'directory',
       button: document.querySelector('button[name="Directory"]'),
       card: document.getElementById('addressCard'),
     },
     {
-      name: 'History',
+      name: 'history',
       button: document.querySelector('button[name="History"]'),
       card: document.getElementById('historyCard'),
     },
@@ -923,12 +1134,59 @@ window.toggleTabState = async (activeButtonName) => {
     }
   })
 
-  if (activeButtonName === 'History') {
+  if (activeButtonName === 'history') {
     await fetchHistories()
   }
 
-  if (activeButtonName === 'Directory') {
+  if (activeButtonName === 'directory') {
     await fetchAddresses()
+  }
+}
+
+function updatePaginationUI(activeButtonName) {
+  const config = [
+    {
+      name: 'address',
+      paginationDiv: document.getElementById('addressPagination'),
+      data: window.__addressData,
+      fetchNext: fetchNextAddresses,
+      fetcthPrev: fetchPrevAddresses,
+    },
+    {
+      name: 'history',
+      paginationDiv: document.getElementById('historyPagination'),
+      data: window.__historyData,
+      fetchNext: fetchNextHistories,
+      fetcthPrev: fetchPrevHistories,
+    },
+    {
+      name: 'message',
+      paginationDiv: document.getElementById('messagePagination'),
+      data: window.__messageData,
+      fetchNext: fetchNextMessages,
+      fetcthPrev: fetchPrevMessages,
+    },
+  ]
+
+  const currentConf = config.find((conf) => conf.name === activeButtonName)
+  if (!currentConf?.data) return
+
+  currentConf.paginationDiv.classList.remove('d-none')
+  const nextBtn = currentConf.paginationDiv.querySelector(
+    'button[name="fetch-next"]'
+  )
+  const prevBtn = currentConf.paginationDiv.querySelector(
+    'button[name="fetch-prev"]'
+  )
+
+  if (nextBtn) {
+    nextBtn.onclick = currentConf.fetchNext
+    nextBtn.disabled = !currentConf.data.hasNext
+  }
+
+  if (prevBtn) {
+    prevBtn.onclick = currentConf.fetcthPrev
+    prevBtn.disabled = !currentConf.data.hasPrev
   }
 }
 
@@ -973,16 +1231,16 @@ const createAddressListItem = (address) => {
   Object.entries(address.channels).forEach(([channelName, channelValue]) => {
     const button = document.createElement('button')
     button.className = 'btn btn-sm btn-success'
-
-    button.addEventListener('click', () => dialAddress(channelValue))
-
     const icon = document.createElement('i')
     if (channelName === 'messaging') {
       icon.className = 'bi bi-chat'
+      button.addEventListener('click', () => openMessageModal(address))
     } else if (channelName === 'video') {
       icon.className = 'bi bi-camera-video'
+      button.addEventListener('click', () => dialAddress(channelValue))
     } else if (channelName === 'audio') {
       icon.className = 'bi bi-phone'
+      button.addEventListener('click', () => dialAddress(channelValue))
     }
     button.appendChild(icon)
 
@@ -998,15 +1256,182 @@ const createAddressListItem = (address) => {
   return listItem
 }
 
-function updateAddressUI() {
-  const addressDiv = document.getElementById('addresses')
-  const { data: addresses } = window.__addressData
+function updateMembersUI() {
+  const membersDiv = document.getElementById('members')
+  membersDiv.innerHTML = ''
+  const members = window.__membersData
 
+  const createMemberItem = (member) => {
+    const createChildElement = (options) => {
+      const el = document.createElement(options.tag)
+
+      Object.entries(options).forEach(([key, value]) => {
+        if (['tag', 'parent'].includes(key)) return
+        el[key] = value
+      })
+
+      options.parent.appendChild(el)
+
+      return el
+    }
+
+    const listItem = document.createElement('li')
+    listItem.className = 'list-group-item'
+
+    const memberDiv = document.createElement('div')
+    memberDiv.className = 'row p-0'
+    listItem.appendChild(memberDiv)
+
+    createChildElement({
+      tag: 'div',
+      textContent: member.type,
+      className: 'badge bg-primary me-2',
+      parent: memberDiv,
+    })
+
+    createChildElement({
+      tag: 'div',
+      textContent: member.id,
+      parent: memberDiv,
+    })
+
+    createChildElement({
+      tag: 'div',
+      textContent: member.name,
+      parent: memberDiv,
+    })
+
+    createChildElement({
+      tag: 'div',
+      textContent: `${member.currentPosition}=>${member.requestedPosition}`,
+      parent: memberDiv,
+    })
+
+    createChildElement({
+      tag: 'div',
+      textContent: member.meta
+        ? Object.entries(member.meta).reduce((previous, [key, value]) => {
+            return `${previous},${key}:${value}`
+          }, '')
+        : 'no meta',
+      parent: memberDiv,
+    })
+
+    createChildElement({
+      tag: 'div',
+      textContent: `visible:${member.visible}`,
+      parent: memberDiv,
+    })
+
+    createChildElement({
+      tag: 'div',
+      textContent: `audio muted:${member.audio_muted}`,
+      parent: memberDiv,
+    })
+
+    createChildElement({
+      tag: 'div',
+      textContent: `video muted:${member.video_muted}`,
+      parent: memberDiv,
+    })
+
+    createChildElement({
+      tag: 'div',
+      textContent: `deaf:${member.deaf}`,
+      parent: memberDiv,
+    })
+
+    createChildElement({
+      tag: 'div',
+      textContent: `talking: ${member.talking}`,
+      parent: memberDiv,
+    })
+
+    createChildElement({
+      tag: 'div',
+      textContent: `handraised: ${member.handraised}`,
+      parent: memberDiv,
+    })
+
+    createChildElement({
+      tag: 'div',
+      textContent: `input volume: ${member.input_volume}`,
+      parent: memberDiv,
+    })
+
+    createChildElement({
+      tag: 'div',
+      textContent: `input sensitivity: ${member.input_sensitivity}`,
+      parent: memberDiv,
+    })
+
+    createChildElement({
+      tag: 'div',
+      textContent: `input volume: ${member.output_volume}`,
+      parent: memberDiv,
+    })
+
+    const actionsDiv = createChildElement({
+      tag: 'div',
+      className: 'btn-group-vertical btn-group-sm',
+      parent: memberDiv,
+    })
+
+    createChildElement({
+      tag: 'a',
+      className: 'btn btn-warning',
+      textContent: 'mute audio',
+      href: '#',
+      onclick: () => window.muteMember(member.id),
+      parent: actionsDiv,
+    })
+    createChildElement({
+      tag: 'a',
+      className: 'btn btn-warning',
+      textContent: 'unmute audio',
+      href: '#',
+      onclick: () => window.unmuteMember(member.id),
+      parent: actionsDiv,
+    })
+    createChildElement({
+      tag: 'a',
+      className: 'btn btn-warning',
+      textContent: 'mute video',
+      href: '#',
+      onclick: () => console.log('### Nothing Executed ###'),
+      parent: actionsDiv,
+    })
+    createChildElement({
+      tag: 'a',
+      className: 'btn btn-warning',
+      textContent: 'unmute video',
+      href: '#',
+      onclick: () => console.log('### Nothing Executed ###'),
+      parent: actionsDiv,
+    })
+
+    memberDiv.appendChild(actionsDiv)
+
+    return listItem
+  }
+
+  Object.values(members)
+    .map(createMemberItem)
+    .forEach((memberCard) => membersDiv.appendChild(memberCard))
+}
+
+function updateAddressUI() {
+  const { data: addresses } = window.__addressData || {}
+  if (!addresses) return
+
+  const addressDiv = document.getElementById('addresses')
   const addressUl = addressDiv.querySelector('ul')
   addressUl.innerHTML = ''
   addresses
     .map(createAddressListItem)
     .forEach((item) => addressUl.appendChild(item))
+
+  updatePaginationUI('address')
 }
 
 async function fetchAddresses() {
@@ -1018,23 +1443,26 @@ async function fetchAddresses() {
     const addressData = await client.address.getAddresses({
       type: selectedType === 'all' ? undefined : selectedType,
       displayName: !searchText.length ? undefined : searchText,
+      pageSize: 10,
     })
     window.__addressData = addressData
-    updateAddressUI()
   } catch (error) {
     console.error('Unable to fetch addresses', error)
+  } finally {
+    updateAddressUI()
   }
 }
 
-window.dialAddress = async (address) => {
+async function dialAddress(address) {
   const destinationInput = document.getElementById('destination')
   destinationInput.value = address
   connect()
 }
 
-window.fetchNextAddresses = async () => {
-  const { nextPage } = window.__addressData
+async function fetchNextAddresses() {
+  const { hasNext, nextPage } = window.__addressData
   try {
+    if (!hasNext) return
     const nextAddresses = await nextPage()
     window.__addressData = nextAddresses
     updateAddressUI()
@@ -1043,9 +1471,10 @@ window.fetchNextAddresses = async () => {
   }
 }
 
-window.fetchPrevAddresses = async () => {
-  const { prevPage } = window.__addressData
+async function fetchPrevAddresses() {
+  const { hasPrev, prevPage } = window.__addressData
   try {
+    if (!hasPrev) return
     const prevAddresses = await prevPage()
     window.__addressData = prevAddresses
     updateAddressUI()
@@ -1109,25 +1538,31 @@ function createConversationListItem(convo) {
 }
 
 function updateHistoryUI() {
-  const historyDiv = document.getElementById('histories')
-  const { data: histories } = window.__historyData
+  const { data: histories } = window.__historyData || {}
+  if (!histories) return
 
+  const historyDiv = document.getElementById('histories')
   const historyUl = historyDiv.querySelector('ul')
   historyUl.innerHTML = ''
   histories
     .map(createConversationListItem)
     .forEach((item) => historyUl.appendChild(item))
+
+  updatePaginationUI('history')
 }
 
 async function fetchHistories() {
   if (!client) return
   try {
-    const historyData = await client.conversation.getConversations()
+    const historyData = await client.conversation.getConversations({
+      pageSize: 10,
+    })
     window.__historyData = historyData
-    updateHistoryUI()
     subscribeToNewMessages()
   } catch (error) {
     console.error('Unable to fetch histories', error)
+  } finally {
+    updateHistoryUI()
   }
 }
 
@@ -1179,7 +1614,6 @@ function subscribeToNewMessages() {
       }
 
       // Update in call live messages
-      // FIXME: Make sure the message is for the current call based on newMsg.conversation_id
       const liveMessageList = document.querySelector('#liveMessageList')
       const newListItem = createLiveMessageListItem(newMsg)
       if (liveMessageList.firstChild) {
@@ -1189,6 +1623,30 @@ function subscribeToNewMessages() {
       }
     })
     isConvoSubscribed = true
+  }
+}
+
+async function fetchNextHistories() {
+  const { hasNext, nextPage } = window.__historyData
+  try {
+    if (!hasNext) return
+    const nextHistory = await nextPage()
+    window.__historyData = nextHistory
+    updateHistoryUI()
+  } catch (error) {
+    console.error('Unable to fetch next histories', error)
+  }
+}
+
+async function fetchPrevHistories() {
+  const { hasPrev, prevPage } = window.__historyData
+  try {
+    if (!hasPrev) return
+    const prevHistory = await prevPage()
+    window.__historyData = prevHistory
+    updateHistoryUI()
+  } catch (error) {
+    console.error('Unable to fetch prev histories', error)
   }
 }
 
@@ -1203,9 +1661,10 @@ function createMessageListItem(msg) {
   listItem.innerHTML = `
     <div class="d-flex flex-column">
       <div class="d-flex justify-content-between align-items-center">
-        <h6 class="mb-0 text-capitalize">${msg.type ?? 'unknown'}</h6>
+        <h6 class="mb-0 text-capitalize">${msg.text ?? 'unknown'}</h6>
         <div class="d-flex align-items-center gap-1">
-          <span class="badge bg-info">${msg.subtype ?? 'unknown'}</span>
+          <span class="badge bg-info">${msg.type ?? 'unknown'}</span>
+          <span class="badge bg-warning">${msg.subtype ?? 'unknown'}</span>
           <span class="badge bg-success">${msg.kind ?? 'unknown'}</span>
         </div>
       </div>
@@ -1220,16 +1679,19 @@ const msgModalDiv = document.getElementById('messageModal')
 msgModalDiv.addEventListener('hidden.bs.modal', clearMessageModal)
 
 function clearMessageModal() {
+  window.__currentAddress = null
   window.__messageData = null
   const titleH2 = msgModalDiv.querySelector('.title')
   const typeBadgeSpan = msgModalDiv.querySelector('.type-badge')
   const contactBtnDiv = msgModalDiv.querySelector('.contact-buttons')
   const messageList = msgModalDiv.querySelector('#messageList')
+  const messagePagination = msgModalDiv.querySelector('#messagePagination')
   const loaderListItem = msgModalDiv.querySelector('#messageList li')
   const avatarImage = msgModalDiv.querySelector('.avatar')
   titleH2.textContent = ''
   typeBadgeSpan.textContent = ''
   contactBtnDiv.classList.add('d-none')
+  messagePagination.classList.add('d-none')
   // Remove all the message list item except the first one (loader)
   Array.from(messageList.children)
     .slice(1)
@@ -1245,6 +1707,7 @@ function clearMessageModal() {
 }
 
 async function openMessageModal(data) {
+  window.__currentAddress = data
   const modal = new bootstrap.Modal(msgModalDiv)
   modal.show()
 
@@ -1263,26 +1726,26 @@ async function openMessageModal(data) {
     if (data.channels.audio) {
       const audioBtn = contactBtnDiv.querySelector('.btn-dial-audio')
       audioBtn.classList.remove('d-none')
-      audioBtn.addEventListener('click', () => {
+      audioBtn.onclick = () => {
         dialAddress(data.channels.audio)
         modal.hide()
-      })
+      }
     }
     if (data.channels.video) {
       const videoBtn = contactBtnDiv.querySelector('.btn-dial-video')
       videoBtn.classList.remove('d-none')
-      videoBtn.addEventListener('click', () => {
+      videoBtn.onclick = () => {
         dialAddress(data.channels.video)
         modal.hide()
-      })
+      }
     }
     if (data.channels.messaging) {
       const messagingBtn = contactBtnDiv.querySelector('.btn-dial-messaging')
       messagingBtn.classList.remove('d-none')
-      messagingBtn.addEventListener('click', () => {
+      messagingBtn.onclick = () => {
         dialAddress(data.channels.messaging)
         modal.hide()
-      })
+      }
     }
   }
 
@@ -1295,6 +1758,7 @@ function updateMessageUI() {
   const messageList = msgModalDiv.querySelector('#messageList')
   const loaderListItem = messageList.querySelector('li')
   loaderListItem.classList.add('d-none')
+  messageList.innerHTML = ''
   if (!messages?.length) {
     const noMsglistItem = document.createElement('li')
     noMsglistItem.classList.add('list-group-item')
@@ -1309,6 +1773,8 @@ function updateMessageUI() {
   messages
     .map(createMessageListItem)
     .forEach((li) => messageList.appendChild(li))
+
+  updatePaginationUI('message')
 }
 
 async function fetchMessages(id) {
@@ -1316,11 +1782,38 @@ async function fetchMessages(id) {
   try {
     const messages = await client.conversation.getConversationMessages({
       addressId: id,
+      pageSize: 10,
     })
     window.__messageData = messages
-    updateMessageUI()
+    subscribeToNewMessages()
   } catch (error) {
     console.error('Unable to fetch messages', error)
+  } finally {
+    updateMessageUI()
+  }
+}
+
+async function fetchNextMessages() {
+  const { hasNext, nextPage } = window.__messageData
+  try {
+    if (!hasNext) return
+    const nextMessage = await nextPage()
+    window.__messageData = nextMessage
+    updateMessageUI()
+  } catch (error) {
+    console.error('Unable to fetch next message', error)
+  }
+}
+
+async function fetchPrevMessages() {
+  const { hasPrev, prevPage } = window.__messageData
+  try {
+    if (!hasPrev) return
+    const prevMessage = await prevPage()
+    window.__messageData = prevMessage
+    updateMessageUI()
+  } catch (error) {
+    console.error('Unable to fetch prev message', error)
   }
 }
 

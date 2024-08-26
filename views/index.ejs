@@ -14,7 +14,7 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
     integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-
+  <link rel="stylesheet" href="/styles.css">
 </head>
 
 <body class="bg-light">
@@ -49,21 +49,53 @@
     <div class="row py-3">
       <!-- Connect options -->
       <div class="col-12 col-md-4">
-        <div class="card">
+        <% if (user) { %>
+          <div id="user-info" class="card">
+            <div class="card-header">User Info</div>
+            <div class="card-body">
+              <ul class="list-group list-group-flush">
+                <li class="list-group-item">id: <%= user.id %></li>
+                <li class="list-group-item">email: <%= user.email %></li>
+                <li class="list-group-item">First Name: <%= user.first_name %></li>
+                <li class="list-group-item">Last Name: <%= user.last_name %></li>
+                <li class="list-group-item">Display Name: <%= user.display_name %></li>
+                <li class="list-group-item">Job Title: <%= user.job_title %></li>
+                <li class="list-group-item">Time Zone: <%= user.time_zone %></li>
+                <li class="list-group-item">Ccountry: <%= user.country %></li>
+                <li class="list-group-item">Region: <%= user.region %></li>
+                <li class="list-group-item">Company Name: <%= user.company_name %></li>
+              </ul>
+            </div>
+          </div>
+        <% } %>
+
+        <div id="callConsole" class="card">
           <div class="card-body">
             <h5>Connect</h5>
             <div class="form-group">
               <label for="steeringId">Steering ID</label>
-              <input type="text" class="form-control" id="steeringId" placeholder="optional freeswitch nodeid" />
+              <input 
+                type="text"
+                class="form-control"
+                id="steeringId"
+                placeholder="optional freeswitch nodeid"
+                onchange="saveInLocalStorage(event)"
+              />
             </div>
             <div class="form-group">
               <label for="destination">Address</label>
-              <input type="text" class="form-control" id="destination" placeholder="<%= destination %>"
-                value="<%= destination %>" />
+              <input 
+                type="text"
+                class="form-control"
+                id="destination"
+                placeholder="<%= destination %>""
+                value="<%= destination %>"
+                onchange="saveInLocalStorage(event)"
+              />
             </div>
-            <div class="d-grid gap-2">
+            <div class="d-grid gap-2 mt-2">
               <button id="btnConnect" class="btn btn-success" onclick="connect()">
-                Connect
+                Dial
               </button>
               <button id="btnAnswer" class="btn btn-warning d-none" onclick="answer()">
                 Answer
@@ -73,6 +105,12 @@
               </button>
               <button id="btnDisconnect" class="btn btn-danger d-none" onclick="hangup()">
                 Disconnect
+              </button>
+              <button id="btnDisconnectMedia" class="btn btn-danger d-none" onclick="simulate_no_packets()">
+                No Packets Received
+              </button>
+              <button id="btnDisconnectWS" class="btn btn-danger d-none" onclick="simulate_socket_error()">
+                Socket Error
               </button>
             </div>
 
@@ -84,8 +122,11 @@
         <div class="card mt-2">
           <div class="d-grid gap-2">
             <a id="btnRegister" class="btn btn-success" href="/?inbound">
-              Register
+              Register Device for Push Notification
             </a>
+            <button id="btnAvaliable" class="btn btn-warning" onclick="toggleAvaliable()">
+              Avaliable
+            </button>
           </div>
         </div>
 
@@ -109,6 +150,16 @@
               <button id="unmuteVideoSelfBtn" class="btn btn-warning px-3 mt-2" onClick="unmuteVideoSelf()"
                 disabled="true">
                 Video UnMute Self
+              </button>
+            </div>
+
+            <div class="btn-group w-100" role="group">
+              <button id="lockCallBtn" class="btn btn-warning px-3 mt-2" onClick="lockCall()" disabled="true">
+                lock room
+              </button>
+              <button id="unlockCallBtn" class="btn btn-warning px-3 mt-2" onClick="unlockCall()"
+                disabled="true">
+                unlock room
               </button>
             </div>
 
@@ -185,15 +236,15 @@
         <div id="tabs">
           <ul class="nav nav-tabs">
             <li class="nav-item">
-              <button class="nav-link text-secondary" name="History" onclick="toggleTabState('History')">History</button>
+              <button class="nav-link text-secondary" name="History" onclick="toggleTabState('history')">History</button>
             </li>
             <li class="nav-item">
-              <button class="nav-link active" name="Directory" onclick="toggleTabState('Directory')">Directory</button>
+              <button class="nav-link active" name="Directory" onclick="toggleTabState('directory')">Directory</button>
             </li>
           </ul>
 
           <!-- Addresses -->
-          <div class="card border-top-0 rounded-top-0" id="addressCard">
+          <div id="addressCard" class="card border-top-0 rounded-top-0" style="min-height: 300px">
             <!-- Filters -->
             <div class="input-group mt-1 px-2">
               <input
@@ -218,172 +269,219 @@
               <ul class="list-group list-group-flush"></ul>
             </div>
             
-            <!-- Pagination -->
-            <div class="d-flex justify-content-center pb-2 gap-2">
+            <!-- Address Pagination -->
+            <div id="addressPagination" class="d-flex justify-content-center pb-2 gap-2 d-none">
               <button 
-                name="fetch-prev-address" 
+                name="fetch-prev" 
                 type="button" 
                 class="btn btn-light btn-sm" 
-                onclick="fetchPrevAddresses()">
+                disabled
+              >
                 Prev
               </button>
               <button 
-                name="fetch-next-address" 
+                name="fetch-next" 
                 type="button" 
                 class="btn btn-light btn-sm" 
-                onclick="fetchNextAddresses()">
+                disabled
+              >
                 Next
               </button>
             </div>
-            <!-- Pagination end -->
+            <!-- Address Pagination end -->
           </div>
           <!-- Addresses end -->
 
           <!-- History -->
-          <div class="card border-top-0 rounded-top-0 d-none" id="historyCard">
+          <div id="historyCard" class="card border-top-0 rounded-top-0 d-none" style="min-height: 300px">
             <div class="card-body" id="histories">
               <ul class="list-group list-group-flush"></ul>
             </div>
+
+            <!-- History Pagination -->
+            <div id="historyPagination" class="d-flex justify-content-center pb-2 gap-2 d-none">
+              <button 
+                name="fetch-prev" 
+                type="button" 
+                class="btn btn-light btn-sm" 
+                disabled  
+              >
+                Prev
+              </button>
+              <button 
+                name="fetch-next" 
+                type="button" 
+                class="btn btn-light btn-sm" 
+                disabled  
+              >
+                Next
+              </button>
+            </div>
+            <!-- History Pagination end -->
           </div>
           <!-- History end -->
         </div>
         <!-- Address/History Tabs end -->
 
-        <!-- Root element (for SDK video) -->
-        <div class="row py-3">
-          <div class="col-12">
-            <div id="rootElement"></div>
-          </div>
-        </div>
-        <!-- Root element (for SDK video) end -->
+        <div class="row">
+          <div class="col-8">
 
-        <!-- Mic/Speaker volume controls -->
-        <div id="controlSliders" class="row py-2 d-none">
-          <div class="col-4">
-            <label for="microphoneVolume" class="form-label">
-              Microphone Volume
-            </label>
-            <input type="range" class="form-range" oninput="rangeInputHandler(this)" min="-4" max="4" value="0"
-              id="microphoneVolume" />
-          </div>
-          <div class="col-4">
-            <label for="speakerVolume" class="form-label">
-              Speaker Volume
-            </label>
-            <input type="range" class="form-range" oninput="rangeInputHandler(this)" min="-4" max="4" value="0"
-              id="speakerVolume" />
-          </div>
-          <div class="col-4">
-            <label for="inputSensitivity" class="form-label">Noise Gate</label>
-            <input type="range" class="form-range" oninput="rangeInputHandler(this)" min="0" max="12" value="4"
-              id="inputSensitivity" />
-          </div>
-        </div>
-        <!-- Mic/Speaker volume controls end -->
-
-        <!-- Device controls -->
-        <div id="controlLayout" class="row py-2 d-none">
-          <div class="col-4">
-            <label for="cameraSelect" class="form-label">Camera</label>
-            <select class="form-select" value="" id="cameraSelect" onchange="changeCamera(this)"></select>
-          </div>
-          <div class="col-4">
-            <label for="microphoneSelect" class="form-label">Microphone</label>
-            <select class="form-select" value="" id="microphoneSelect" onchange="changeMicrophone(this)"></select>
-          </div>
-          <div class="col-4">
-            <label for="speakerSelect" class="form-label">Speaker</label>
-            <select class="form-select" value="" id="speakerSelect" onchange="changeSpeaker(this)"></select>
-          </div>
-        </div>
-        <!-- Device controls end -->
-
-        <!-- Call record controls -->
-        <div id="controlRecording" class="row py-2 d-none">
-          <h6>Recording (<i id="recordingState">unknown</i>)</h6>
-          <div class="col-12">
-            <div class="btn-group w-100" role="group">
-              <button id="startRecordingBtn" class="btn btn-success px-3 mt-2 d-none" onClick="startRecording()"
-                disabled="true">
-                Start Recording
-              </button>
-              <button id="pauseRecordingBtn" class="btn btn-info px-3 mt-2 d-none" onClick="pauseRecording()"
-                disabled="true">
-                Pause Recording
-              </button>
-              <button id="resumeRecordingBtn" class="btn btn-info px-3 mt-2 d-none" onClick="resumeRecording()"
-                disabled="true">
-                Resume Recording
-              </button>
-              <button id="stopRecordingBtn" class="btn btn-danger px-3 mt-2 d-none" onClick="stopRecording()"
-                disabled="true">
-                Stop Recording
-              </button>
+            <!-- Root element (for SDK video) -->
+            <div class="row py-3">
+              <div class="col-12">
+                <div id="rootElement"></div>
+              </div>
             </div>
-          </div>
-        </div>
-        <!-- Call record controls end -->
-
-        <!-- Call playback controls -->
-        <div id="controlPlayback" class="row py-2 d-none">
-          <h6>Playback URL</h6>
-          <div class="form-group">
-            <input type="text" class="form-control" id="playbackUrl" />
-          </div>
-          <div class="col-12">
-            <div class="btn-group w-100" role="group">
-              <button id="playBtn" class="btn btn-success px-3 mt-2" onClick="startPlayback()">
-                Start Playback
-              </button>
-              <button id="pausePlaybackBtn" class="btn btn-info px-3 mt-2 d-none" onClick="pausePlayback()"
-                disabled="true">
-                Pause Playback
-              </button>
-              <button id="resumePlaybackBtn" class="btn btn-info px-3 mt-2 d-none" onClick="resumePlayback()"
-                disabled="true">
-                Resume Playback
-              </button>
-              <button id="stopPlaybackBtn" class="btn btn-danger px-3 mt-2 d-none" onClick="stopPlayback()"
-                disabled="true">
-                Stop Playback
-              </button>
+            <!-- Root element (for SDK video) end -->
+    
+            <!-- Mic/Speaker volume controls -->
+            <div id="controlSliders" class="row py-2 d-none">
+              <div class="col-4">
+                <label for="microphoneVolume" class="form-label">
+                  Microphone Volume
+                </label>
+                <input type="range" class="form-range" oninput="rangeInputHandler(this)" min="-4" max="4" value="0"
+                  id="microphoneVolume" />
+              </div>
+              <div class="col-4">
+                <label for="speakerVolume" class="form-label">
+                  Speaker Volume
+                </label>
+                <input type="range" class="form-range" oninput="rangeInputHandler(this)" min="-4" max="4" value="0"
+                  id="speakerVolume" />
+              </div>
+              <div class="col-4">
+                <label for="inputSensitivity" class="form-label">Noise Gate</label>
+                <input type="range" class="form-range" oninput="rangeInputHandler(this)" min="0" max="12" value="4"
+                  id="inputSensitivity" />
+              </div>
             </div>
-            <div class="col-12 py-2 d-none" id="playbackSeekAbsoluteGroup">
-              <h6>Playback Seek</h6>
-              <div class="row g-2 align-items-center col-auto">
-                <div class="col-auto">
-                  <input type="text" class="form-control" id="playbackSeekAbsolute" />
-                </div>
-                <div class="col-auto">
-                  <button id="seekPlaybackBtn" class="btn btn-danger" onClick="seekPlayback()">
-                    Seek
+            <!-- Mic/Speaker volume controls end -->
+    
+            <!-- Device controls -->
+            <div id="controlLayout" class="row py-2 d-none">
+              <div class="col-4">
+                <label for="cameraSelect" class="form-label">Camera</label>
+                <select class="form-select" value="" id="cameraSelect" onchange="changeCamera(this)"></select>
+              </div>
+              <div class="col-4">
+                <label for="microphoneSelect" class="form-label">Microphone</label>
+                <select class="form-select" value="" id="microphoneSelect" onchange="changeMicrophone(this)"></select>
+              </div>
+              <div class="col-4">
+                <label for="speakerSelect" class="form-label">Speaker</label>
+                <select class="form-select" value="" id="speakerSelect" onchange="changeSpeaker(this)"></select>
+              </div>
+            </div>
+            <!-- Device controls end -->
+    
+            <!-- Call record controls -->
+            <div id="controlRecording" class="row py-2 d-none">
+              <h6>Recording (<i id="recordingState">unknown</i>)</h6>
+              <div class="col-12">
+                <div class="btn-group w-100" role="group">
+                  <button id="startRecordingBtn" class="btn btn-success px-3 mt-2 d-none" onClick="startRecording()"
+                    disabled="true">
+                    Start Recording
                   </button>
-                </div>
-                <div class="btn-group col-auto">
-                  <button id="seekRewindPlaybackBtn" class="btn btn-info" onClick="seekRewindPlayback()">
-                    Rewind
+                  <button id="pauseRecordingBtn" class="btn btn-info px-3 mt-2 d-none" onClick="pauseRecording()"
+                    disabled="true">
+                    Pause Recording
                   </button>
-                  <button id="seekForwardPlaybackBtn" class="btn btn-success" onClick="seekForwardPlayback()">
-                    Forward
+                  <button id="resumeRecordingBtn" class="btn btn-info px-3 mt-2 d-none" onClick="resumeRecording()"
+                    disabled="true">
+                    Resume Recording
+                  </button>
+                  <button id="stopRecordingBtn" class="btn btn-danger px-3 mt-2 d-none" onClick="stopRecording()"
+                    disabled="true">
+                    Stop Recording
                   </button>
                 </div>
               </div>
             </div>
-            <div id="playbackVolumeControl" class="col-12 d-none">
-              <label for="playbackVolume" class="form-label">
-                Playback Volume
-              </label>
-              <input type="range" class="form-range" oninput="rangeInputHandler(this)" min="-50" max="50" value="0"
-                id="playbackVolume" />
+            <!-- Call record controls end -->
+    
+            <!-- Call playback controls -->
+            <div id="controlPlayback" class="row py-2 d-none">
+              <h6>Playback URL</h6>
+              <div class="form-group">
+                <input type="text" class="form-control" id="playbackUrl" />
+              </div>
+              <div class="col-12">
+                <div class="btn-group w-100" role="group">
+                  <button id="playBtn" class="btn btn-success px-3 mt-2" onClick="startPlayback()">
+                    Start Playback
+                  </button>
+                  <button id="pausePlaybackBtn" class="btn btn-info px-3 mt-2 d-none" onClick="pausePlayback()"
+                    disabled="true">
+                    Pause Playback
+                  </button>
+                  <button id="resumePlaybackBtn" class="btn btn-info px-3 mt-2 d-none" onClick="resumePlayback()"
+                    disabled="true">
+                    Resume Playback
+                  </button>
+                  <button id="stopPlaybackBtn" class="btn btn-danger px-3 mt-2 d-none" onClick="stopPlayback()"
+                    disabled="true">
+                    Stop Playback
+                  </button>
+                </div>
+                <div class="col-12 py-2 d-none" id="playbackSeekAbsoluteGroup">
+                  <h6>Playback Seek</h6>
+                  <div class="row g-2 align-items-center col-auto">
+                    <div class="col-auto">
+                      <input type="text" class="form-control" id="playbackSeekAbsolute" />
+                    </div>
+                    <div class="col-auto">
+                      <button id="seekPlaybackBtn" class="btn btn-danger" onClick="seekPlayback()">
+                        Seek
+                      </button>
+                    </div>
+                    <div class="btn-group col-auto">
+                      <button id="seekRewindPlaybackBtn" class="btn btn-info" onClick="seekRewindPlayback()">
+                        Rewind
+                      </button>
+                      <button id="seekForwardPlaybackBtn" class="btn btn-success" onClick="seekForwardPlayback()">
+                        Forward
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <div id="playbackVolumeControl" class="col-12 d-none">
+                  <label for="playbackVolume" class="form-label">
+                    Playback Volume
+                  </label>
+                  <input type="range" class="form-range" oninput="rangeInputHandler(this)" min="-50" max="50" value="0"
+                    id="playbackVolume" />
+                </div>
+              </div>
             </div>
+            <!-- Call playback controls end -->
           </div>
+
+          <!-- Member List UI -->
+          <ul class="col-4 list-group" id="members"></ul>
+          <!-- Member List UI end -->
         </div>
-        <!-- Call playback controls end -->
+
       </div>
     </div>
     <hr />
+    <div class="row py-3">
+      <div class="col-12">
+        <h4>Execute RPC</h4>
+        <textarea id="rpcBody" class="form-control"></textarea>
+        <div class="py-3 d-flex  flex-row justify-content-center">
+        <button id="btnRPC" class="btn btn-secondary btn-execute" onclick="executeRPC()">execute</button>
+        </div>
+        <h4>Result</h4>
+        <div id="resultRPC" class="card">
+        </div>
+      </div>
+    </div>
   </div>
-
+  <% if (host === 'puc.swire.io') { %>
+  <div id="videoDebug"></div>
+  <% } %>
   <div class="modal fade" id="messageModal" tabindex="-1" aria-labelledby="messageModalLabel" aria-hidden="true">
     <div class="modal-dialog">
       <div class="modal-content">
@@ -417,6 +515,31 @@
                 <span class="placeholder placeholder-lg col-12"></span>
               </li>
             </ul>
+
+            <!-- Message Pagination -->
+            <div id="messagePagination" class="d-flex justify-content-center pb-2 gap-2 d-none">
+              <button 
+                name="fetch-prev" 
+                type="button" 
+                class="btn btn-light btn-sm" 
+                disabled  
+              >
+                Prev
+              </button>
+              <button 
+                name="fetch-next" 
+                type="button" 
+                class="btn btn-light btn-sm" 
+                disabled  
+              >
+                Next
+              </button>
+            </div>
+            <!-- Message Pagination end -->
+            <div class="input-group mt-4 container-fluid">
+              <input type="text" id="new-conversation-message" class="form-control" placeholder="Message..." aria-label="Chat Message" aria-describedby="button-addon2">
+              <button class="btn btn-primary" type="button" id="send-message"><i class="bi-send"></i></button>
+            </div>
           </div>
         </div>
       </div>
@@ -443,8 +566,10 @@
   </script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
   <!-- script type="text/javascript" src="https://unpkg.com/@signalwire/js@dev"></script -->
+  <script type="text/javascript" src="https://unpkg.com/ua-parser-js"></script>
   <script src="/index.umd.js"></script>
   <script src="/full.js"></script>
+  <script type="text/javascript" src="full.js"></script>
 </body>
 
 </html>
