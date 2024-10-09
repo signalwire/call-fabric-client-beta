@@ -84,6 +84,38 @@ window.playbackEnded = () => {
   })
 }
 
+const parser = new UAParser(window.navigator.userAgent)
+const {
+  ua: userAgent,
+  browser: { name: browserName, version: browserVersion },
+  os: { name: osName, version: osVersion },
+  device: { type: deviceType },
+}= parser.getResult()
+
+window._userVariables = {
+  fullBrowserVersion: browserVersion || '',
+  gmtOffset: (-1.0 * new Date().getTimezoneOffset()) / 60,
+  hostname: window.location.hostname,
+  isAndroid: osName === 'Android',
+  isChrome: browserName === 'Chrome',
+  isChromium: browserName === 'Chromium',
+  isEdge: browserName === 'Edge',
+  isFirefox: browserName === 'Firefox',
+  isIE: browserName === 'IE',
+  isIOS: osName === 'iOS',
+  isMobile: deviceType === 'mobile',
+  isOpera: browserName === 'Opera',
+  isSafari: browserName === 'Safari',
+  isTablet: deviceType === 'tablet',
+  isWinPhone: osName === 'Windows Mobile',
+  isYandex: browserName === 'Yandex',
+  osName: osName || '',
+  osVersion: osVersion || '',
+  timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+  tzString: new Date().toTimeString().split(' ').splice(1).join(' '),
+  userAgent: userAgent,
+}
+
 async function enablePushNotifications() {
   btnRegister.disabled = true
 
@@ -353,6 +385,8 @@ const initializeMicAnalyzer = async (stream) => {
 function restoreUI() {
   btnConnect.classList.remove('d-none')
   btnDisconnect.classList.add('d-none')
+  btnDisconnectMedia.classList.add('d-none')
+  btnDisconnectWS.classList.add('d-none')
   btnAnswer.classList.add('d-none')
   btnReject.classList.add('d-none')
   tabs.classList.remove('d-none')
@@ -426,6 +460,7 @@ window.connect = async () => {
       debug: { logWsTraffic: true },
       nodeId: steeringId(),
       rootElement: document.getElementById('rootElement'),
+      userVariables: window._userVariables
     })
 
     window.__call = call
@@ -602,6 +637,8 @@ function updateUIConnected() {
   btnReject.classList.add('d-none')
   tabs.classList.add('d-none')
   btnDisconnect.classList.remove('d-none')
+  btnDisconnectMedia.classList.remove('d-none')
+  btnDisconnectWS.classList.remove('d-none')
   callConsole.classList.remove('ringing')
   connectStatus.innerHTML = 'Connected'
 
