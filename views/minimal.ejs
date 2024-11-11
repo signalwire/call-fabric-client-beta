@@ -11,63 +11,23 @@
 </head>
 
 <body>
-  <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-    <div class="container">
-      <a class="navbar-brand" href="#">SignalWire CF Client Beta</a>
-      <ul class="navbar-nav">
-        <li class="nav-item active">
-          <a class="nav-link" href="/">Full</span></a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/minimal">Minimal</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/oauth">Subscriber OAuth</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/subscriber">Subscriber Signin/Signup</a>
-        </li>
-      </ul>
-    </div>
-  </nav>
 
   <div class="container">
-    <div class="row"></div>
-    <div class="col-3">
-      <label for="destination" class="form-label">Destination</label>
-      <input type="text" id="destination" class="form-control" value="<%= destination %>">
-      <button class="btn btn-primary" onclick="makeCall();">Call</button>
-      <div class="card mt-2">
-        <div class="d-grid gap-2">
-          <a id="btnRegister" class="btn btn-success" href="/minimal?inbound">
-            Register
-          </a>
-        </div>
-      </div>
-    </div>
+
+    <button id="startCallBtn" class="btn btn-primary" onclick="makeCall();">click to call</button>
     <div class="row-9">
       <div id="rootElement"></div>
+      <button id="leaveCallBtn" class="btn btn-danger d-none" style="margin: 0 auto;" onclick="leaveCall();">end call</button>
     </div>
+    
   </div>
   </div>
 
-  <script type="module">
-    // Import Firebase libs
-    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js'
-    import { getMessaging, getToken, onMessage } from 'https://www.gstatic.com/firebasejs/10.4.0/firebase-messaging.js'
-
-    window.FB = {
-      initializeApp,
-      getMessaging,
-      getToken,
-      onMessage,
-    }
-  </script>
+  <!-- render a small js script the initialize global var  -->
   <script type="text/javascript">
     const _token = "<%= token %>";
     const _host = "<%= host %>";
-    const _fabricApiUrl = "<%= fabricApiUrl %>";
-    const _firebaseConfig = <%- firebaseConfig %>;
+    const _destination = "<%= destination %>"
   </script>
   <script type="text/javascript" src="https://unpkg.com/@signalwire/js@dev"></script>
   <script type="text/javascript" src="/minimal.js"></script>
