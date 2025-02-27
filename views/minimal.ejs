@@ -34,9 +34,11 @@
   <div class="container">
     <div class="row"></div>
     <div class="col-3">
+      <button class="btn btn-primary my-2" onclick="connect();">Connect</button>
+
       <label for="destination" class="form-label">Destination</label>
       <input type="text" id="destination" class="form-control" value="<%= destination %>">
-      <button class="btn btn-primary" onclick="dial();">Call</button>
+      <button class="btn btn-primary my-1" onclick="dial();">Call</button>
       <div class="card mt-2">
         <div class="d-grid gap-2">
           <a id="btnRegister" class="btn btn-success" href="/minimal?inbound">
@@ -64,7 +66,7 @@
     }
   </script>
   <script type="text/javascript">
-    const _token = "<%= token %>";
+    let _token = "<%= token %>";
     const _host = "<%= host %>";
     const _fabricApiUrl = "<%= fabricApiUrl %>";
     const _firebaseConfig = <%- firebaseConfig %>;

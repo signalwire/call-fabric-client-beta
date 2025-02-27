@@ -35,6 +35,12 @@ async function initSWClient() {
   return client
 }
 
+async function connect() {
+  // Set the token through the console
+  _token = window._token
+  initSWClient()
+}
+
 async function dial() {
   if (!client) {
     console.error('Client is not initialized!')
@@ -51,6 +57,10 @@ async function dial() {
   window.__call = call
 
   await call.start()
+}
+
+async function hangup() {
+  await window.__call.leave()
 }
 
 async function enablePushNotifications() {
