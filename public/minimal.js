@@ -1,3 +1,5 @@
+const { SignalWire: SWire } = SignalWire
+
 let client = null
 let pnSecretKey = null
 
@@ -15,24 +17,38 @@ window.ready = (callback) => {
   }
 }
 
-async function connect() {
-  if (!_token) return
-  
-  client = await SignalWire.SignalWire({
-    host: _host,
+async function initSWClient() {
+  if (!_token) {
+    console.error('Token not found')
+    return
+  }
+
+  client = await SWire({
+    host: !!_host && _host.trim().length ? _host : undefined,
     token: _token,
-    rootElement: document.getElementById('rootElement'),
+    debug: {
+      logWsTraffic: true,
+    },
+    logLevel: 'debug',
   })
 
-  await client.connect()
+  return client
 }
 
-async function makeCall() {
+async function dial() {
+  if (!client) {
+    console.error('Client is not initialized!')
+    return
+  }
+
   const call = await client.dial({
     to: document.getElementById('destination').value,
     logLevel: 'debug',
     debug: { logWsTraffic: true },
+    rootElement: document.getElementById('rootElement'),
   })
+
+  window.__call = call
 
   await call.start()
 }
@@ -171,7 +187,7 @@ async function readPushNotification(payload) {
 }
 
 window.ready(async function () {
-  await connect()
+  await initSWClient()
 
   const searchParams = new URLSearchParams(location.search)
   console.log('Handle inbound?', searchParams.has('inbound'))
