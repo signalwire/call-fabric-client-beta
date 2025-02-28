@@ -119,7 +119,7 @@ app.get('/', async (req, res) => {
 app.get('/minimal', async (req, res) => {
   let token
   if (req.session && req.session.token) {
-    token = session.token
+    token = req.session.token
   }
 
   res.render('minimal', {

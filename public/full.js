@@ -400,16 +400,19 @@ function restoreUI() {
 }
 
 async function initSWClient() {
-  if (!client && _token) {
-    client = await SWire({
-      host: !!_host && _host.trim().length ? _host : undefined,
-      token: _token,
-      debug: {
-        logWsTraffic: true,
-      },
-      logLevel: 'debug',
-    })
+  if (!_token) {
+    console.error('Token not found')
+    return
   }
+
+  client = await SWire({
+    host: !!_host && _host.trim().length ? _host : undefined,
+    token: _token,
+    debug: {
+      logWsTraffic: true,
+    },
+    logLevel: 'debug',
+  })
 
   return client
 }
@@ -429,8 +432,8 @@ sendMessageBtn.addEventListener('click', async () => {
  * Connect with Relay creating a client and attaching all the event handler.
  */
 window.dial = async () => {
-  if (!_token) {
-    console.error('Auth required!')
+  if (!client) {
+    console.error('Client is not initialized!')
     return
   }
 
