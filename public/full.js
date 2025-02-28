@@ -833,6 +833,10 @@ window.unmuteVideoMember = () => {
   roomObj.videoUnmute({ memberId: id })
 }
 
+window.removeMember = (id) => {
+  roomObj.removeMember({ memberid: id})
+}
+
 window.muteVideoSelf = () => {
   roomObj.videoMute()
 }
@@ -1406,6 +1410,14 @@ function updateMembersUI() {
       textContent: 'unmute video',
       href: '#',
       onclick: () => console.log('### Nothing Executed ###'),
+      parent: actionsDiv,
+    })
+    createChildElement({
+      tag: 'a',
+      className: 'btn btn-warning',
+      textContent: 'remove member',
+      href: '#',
+      onclick: () => window.removeMember(member.id),
       parent: actionsDiv,
     })
 
