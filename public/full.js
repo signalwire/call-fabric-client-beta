@@ -1455,7 +1455,7 @@ async function fetchAddresses() {
 async function dialAddress(address) {
   const destinationInput = document.getElementById('destination')
   destinationInput.value = address
-  connect()
+  dial()
 }
 
 async function fetchNextAddresses() {
