@@ -383,7 +383,7 @@ const initializeMicAnalyzer = async (stream) => {
 }
 
 function restoreUI() {
-  btnConnect.classList.remove('d-none')
+  btnDial.classList.remove('d-none')
   btnDisconnect.classList.add('d-none')
   btnDisconnectMedia.classList.add('d-none')
   btnDisconnectWS.classList.add('d-none')
@@ -401,17 +401,20 @@ function restoreUI() {
   updateMembersUI()
 }
 
-async function getClient() {
-  if (!client && _token) {
-    client = await SWire({
-      host: !!_host && _host.trim().length ? _host : undefined,
-      token: _token,
-      debug: {
-        logWsTraffic: true,
-      },
-      logLevel: 'debug'
-    })
+async function initSWClient() {
+  if (!_token) {
+    console.error('Token not found')
+    return
   }
+
+  client = await SWire({
+    host: !!_host && _host.trim().length ? _host : undefined,
+    token: _token,
+    debug: {
+      logWsTraffic: true,
+    },
+    logLevel: 'debug',
+  })
 
   return client
 }
@@ -430,18 +433,15 @@ sendMessageBtn.addEventListener('click', async () => {
 /**
  * Connect with Relay creating a client and attaching all the event handler.
  */
-window.connect = async () => {
-  if (!_token) {
-    console.error('Auth required!')
+window.dial = async () => {
+  if (!client) {
+    console.error('Client is not initialized!')
     return
   }
 
-  btnConnect.classList.add('d-none')
+  btnDial.classList.add('d-none')
   btnDisconnect.classList.remove('d-none')
   window.__membersData = {}
-
-  const client = await getClient()
-  window.__client = client
 
   connectStatus.innerHTML = 'Connecting...'
 
@@ -619,7 +619,7 @@ window.connect = async () => {
 }
 
 function updateUIRinging() {
-  btnConnect.classList.add('d-none')
+  btnDial.classList.add('d-none')
   btnAnswer.classList.remove('d-none')
   btnReject.classList.remove('d-none')
   callConsole.classList.add('ringing')
@@ -632,7 +632,7 @@ function updateUIRinging() {
 }
 
 function updateUIConnected() {
-  btnConnect.classList.add('d-none')
+  btnDial.classList.add('d-none')
   btnAnswer.classList.add('d-none')
   btnReject.classList.add('d-none')
   tabs.classList.add('d-none')
@@ -658,20 +658,22 @@ window.executeRPC = async () => {
 }
 
 window.toggleAvaliable = async () => {
+  if(!client) {
+    console.error('Client not connected')
+    return
+  }
+
   window.__avaliable = !window.__avaliable
   const isOn = window.__avaliable
   btnAvaliable.innerText = isOn ? 'get offline' : 'get online'
   btnAvaliable.classList = isOn ? 'btn btn-success' : 'btn btn-warning'
-  if (!window.__client) {
-    window.__client = await getClient()
-  }
 
   if (isOn) {
-    window.__client.online({
+    await client.online({
       incomingCallHandlers: { all: __incomingCallNotification },
     })
   } else {
-    window.__client.offline()
+    await client.offline()
   }
 }
 
@@ -1095,10 +1097,7 @@ window.seekForwardPlayback = () => {
 
 window.ready(async function () {
   console.log('Ready!')
-  const client = await getClient()
-  if (client) {
-    await client.connect()
-  }
+  await initSWClient()
   const searchParams = new URLSearchParams(location.search)
   console.log('Handle inbound?', searchParams.has('inbound'))
   if (searchParams.has('inbound')) {
@@ -1466,7 +1465,7 @@ async function fetchAddresses() {
 async function dialAddress(address) {
   const destinationInput = document.getElementById('destination')
   destinationInput.value = address
-  connect()
+  dial()
 }
 
 async function fetchNextAddresses() {
