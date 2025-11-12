@@ -41,6 +41,8 @@ const inCallElements = [
   unlockCallBtn,
   deafSelfBtn,
   undeafSelfBtn,
+  raiseHandBtn,
+  lowerHandBtn,
   controlSliders,
   controlLayout,
   hideVMutedBtn,
@@ -863,6 +865,14 @@ window.hideVideoMuted = () => {
 
 window.showVideoMuted = () => {
   roomObj.showVideoMuted()
+}
+
+window.raiseHand = () => {
+  roomObj.setRaisedHand({ raised: true })
+}
+
+window.lowerHand = () => {
+  roomObj.setRaisedHand({ raised: false })
 }
 
 window.changeLayout = (select) => {
